@@ -5,61 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSnessGYM API Interface</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-        }
-        .card {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        input {
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 100%;
-        }
-        .user-info {
-            margin-top: 20px;
-            display: none;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        pre {
-            background-color: #f1f1f1;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
+        h1 { color: #2c3e50; text-align: center; }
+        .card { background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background-color: #2980b9; }
+        input, select { padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
+        .user-info { margin-top: 20px; display: none; }
+        .form-group { margin-bottom: 15px; }
+        pre { background-color: #f1f1f1; padding: 10px; border-radius: 4px; overflow-x: auto; }
     </style>
 </head>
 <body>
 <h1>TSnessGYM API Interface</h1>
 
+<!-- Authentification -->
 <div class="card">
     <h2>Authentification</h2>
     <div class="form-group">
@@ -71,13 +31,13 @@
         <input type="password" id="password" value="tsnessgym">
     </div>
     <button id="login-btn">Se connecter</button>
-
     <div id="token-display" style="margin-top: 10px; display: none;">
         <h3>Token de session:</h3>
         <pre id="token-value"></pre>
     </div>
 </div>
 
+<!-- Profil utilisateur -->
 <div class="card">
     <h2>Profil utilisateur</h2>
     <button id="get-me-btn">Récupérer mes informations</button>
@@ -87,64 +47,431 @@
     </div>
 </div>
 
+<!-- Utilisateurs CRUD -->
+<div class="card">
+    <h2>Utilisateurs (CRUD)</h2>
+    <button id="get-users-btn">Lister tous les utilisateurs</button>
+    <pre id="users-list"></pre>
+    <h3>Créer un utilisateur</h3>
+    <div class="form-group">
+        <input type="text" id="new-username" placeholder="Nom d'utilisateur">
+        <input type="email" id="new-email" placeholder="Email">
+        <input type="password" id="new-password" placeholder="Mot de passe">
+        <select id="new-role">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+            <option value="owner">owner</option>
+        </select>
+    </div>
+    <button id="create-user-btn">Créer</button>
+    <h3>Mettre à jour un utilisateur</h3>
+    <div class="form-group">
+        <input type="text" id="update-id" placeholder="ID utilisateur">
+        <input type="text" id="update-username" placeholder="Nouveau nom">
+    </div>
+    <button id="update-user-btn">Mettre à jour</button>
+    <h3>Supprimer un utilisateur</h3>
+    <div class="form-group">
+        <input type="text" id="delete-id" placeholder="ID utilisateur">
+    </div>
+    <button id="delete-user-btn">Supprimer</button>
+</div>
+
+<!-- Badges CRUD -->
+<div class="card">
+    <h2>Badges (CRUD)</h2>
+    <button id="get-badges-btn">Lister tous les badges</button>
+    <pre id="badges-list"></pre>
+    <h3>Créer un badge</h3>
+    <div class="form-group">
+        <input type="text" id="new-badge-name" placeholder="Nom du badge">
+        <input type="text" id="new-badge-desc" placeholder="Description">
+        <input type="text" id="new-badge-rule" placeholder="Règle du badge">
+    </div>
+    <button id="create-badge-btn">Créer</button>
+    <h3>Mettre à jour un badge</h3>
+    <div class="form-group">
+        <input type="text" id="update-badge-id" placeholder="ID badge">
+        <input type="text" id="update-badge-name" placeholder="Nouveau nom">
+    </div>
+    <button id="update-badge-btn">Mettre à jour</button>
+    <h3>Supprimer un badge</h3>
+    <div class="form-group">
+        <input type="text" id="delete-badge-id" placeholder="ID badge">
+    </div>
+    <button id="delete-badge-btn">Supprimer</button>
+</div>
+
+<!-- Salles CRUD -->
+<div class="card">
+    <h2>Salles (CRUD)</h2>
+    <button id="get-rooms-btn">Lister toutes les salles</button>
+    <pre id="rooms-list"></pre>
+    <h3>Créer une salle</h3>
+    <div class="form-group">
+        <input type="text" id="new-room-name" placeholder="Nom de la salle">
+        <input type="text" id="new-room-location" placeholder="Emplacement">
+        <input type="text" id="new-room-owner" placeholder="ID propriétaire">
+        <input type="text" id="new-room-contact" placeholder="Contact">
+        <input type="text" id="new-room-address" placeholder="Adresse">
+        <input type="number" id="new-room-capacity" placeholder="Capacité">
+    </div>
+    <button id="create-room-btn">Créer</button>
+    <h3>Mettre à jour une salle</h3>
+    <div class="form-group">
+        <input type="text" id="update-room-id" placeholder="ID salle">
+        <input type="text" id="update-room-name" placeholder="Nouveau nom">
+    </div>
+    <button id="update-room-btn">Mettre à jour</button>
+    <h3>Supprimer une salle</h3>
+    <div class="form-group">
+        <input type="text" id="delete-room-id" placeholder="ID salle">
+    </div>
+    <button id="delete-room-btn">Supprimer</button>
+</div>
+
+<!-- Challenges CRUD -->
+<div class="card">
+    <h2>Challenges (CRUD)</h2>
+    <button id="get-challenges-btn">Lister tous les challenges</button>
+    <pre id="challenges-list"></pre>
+    <h3>Créer un challenge</h3>
+    <div class="form-group">
+        <input type="text" id="new-challenge-title" placeholder="Titre">
+        <input type="text" id="new-challenge-desc" placeholder="Description">
+        <input type="text" id="new-challenge-creator" placeholder="ID créateur">
+        <input type="number" id="new-challenge-duration" placeholder="Durée (en minutes)">
+    </div>
+    <button id="create-challenge-btn">Créer</button>
+    <h3>Mettre à jour un challenge</h3>
+    <div class="form-group">
+        <input type="text" id="update-challenge-id" placeholder="ID challenge">
+        <input type="text" id="update-challenge-title" placeholder="Nouveau titre">
+    </div>
+    <button id="update-challenge-btn">Mettre à jour</button>
+    <h3>Supprimer un challenge</h3>
+    <div class="form-group">
+        <input type="text" id="delete-challenge-id" placeholder="ID challenge">
+    </div>
+    <button id="delete-challenge-btn">Supprimer</button>
+</div>
+
+<!-- Types d'exercice CRUD -->
+<div class="card">
+    <h2>Types d'exercice (CRUD)</h2>
+    <button id="get-types-btn">Lister tous les types</button>
+    <pre id="types-list"></pre>
+    <h3>Créer un type</h3>
+    <div class="form-group">
+        <input type="text" id="new-type-name" placeholder="Nom du type">
+        <input type="text" id="new-type-desc" placeholder="Description">
+    </div>
+    <button id="create-type-btn">Créer</button>
+    <h3>Mettre à jour un type</h3>
+    <div class="form-group">
+        <input type="text" id="update-type-id" placeholder="ID type">
+        <input type="text" id="update-type-name" placeholder="Nouveau nom">
+    </div>
+    <button id="update-type-btn">Mettre à jour</button>
+    <h3>Supprimer un type</h3>
+    <div class="form-group">
+        <input type="text" id="delete-type-id" placeholder="ID type">
+    </div>
+    <button id="delete-type-btn">Supprimer</button>
+</div>
+
+<!-- Statistiques d'entraînement CRUD -->
+<div class="card">
+    <h2>Stats d'entraînement (CRUD)</h2>
+    <button id="get-stats-btn">Lister toutes les stats</button>
+    <pre id="stats-list"></pre>
+    <h3>Créer une stat</h3>
+    <div class="form-group">
+        <input type="text" id="new-stats-userId" placeholder="ID utilisateur">
+        <input type="text" id="new-stats-challengeId" placeholder="ID challenge">
+        <input type="number" id="new-stats-progress" placeholder="Progression (%)">
+        <input type="number" id="new-stats-totalCalories" placeholder="Total calories">
+    </div>
+    <button id="create-stats-btn">Créer</button>
+    <h3>Mettre à jour une stat</h3>
+    <div class="form-group">
+        <input type="text" id="update-stats-id" placeholder="ID stat">
+        <input type="number" id="update-stats-progress" placeholder="Nouvelle progression (%)">
+        <input type="number" id="update-stats-totalCalories" placeholder="Nouvelles calories">
+    </div>
+    <button id="update-stats-btn">Mettre à jour</button>
+    <h3>Supprimer une stat</h3>
+    <div class="form-group">
+        <input type="text" id="delete-stats-id" placeholder="ID stat">
+    </div>
+    <button id="delete-stats-btn">Supprimer</button>
+</div>
+
 <script>
     let authToken = '';
     const API_BASE = 'http://localhost:3001';
 
+    // Fonction utilitaire pour afficher les messages d'erreur de l'API
+    async function showApiAlert(res, successMsg, defaultErrorMsg) {
+        if (res.ok) {
+            alert(successMsg);
+        } else {
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                data = {};
+            }
+            alert(data.message || defaultErrorMsg);
+        }
+    }
+
+    // Auth
     document.getElementById('login-btn').addEventListener('click', async () => {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-
         try {
             const response = await fetch(`${API_BASE}/auth/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
             if (!response.ok) {
-                throw new Error(`Erreur de connexion: ${response.status}`);
+                let data;
+                try { data = await response.json(); } catch { data = {}; }
+                throw new Error(data.message || `Erreur de connexion: ${response.status}`);
             }
-
             const data = await response.json();
             authToken = data._id;
-
             document.getElementById('token-value').textContent = authToken;
             document.getElementById('token-display').style.display = 'block';
-
             alert('Connexion réussie!');
         } catch (error) {
-            console.error('Erreur de connexion:', error);
             alert(`Erreur de connexion: ${error.message}`);
         }
     });
 
     document.getElementById('get-me-btn').addEventListener('click', async () => {
-        if (!authToken) {
-            alert('Veuillez vous connecter d\'abord!');
-            return;
-        }
-
+        if (!authToken) return alert('Veuillez vous connecter d\'abord!');
         try {
             const response = await fetch(`${API_BASE}/auth/me`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
-
             if (!response.ok) {
-                throw new Error(`Erreur: ${response.status}`);
+                let data;
+                try { data = await response.json(); } catch { data = {}; }
+                throw new Error(data.message || `Erreur: ${response.status}`);
             }
-
             const userData = await response.json();
             document.getElementById('user-data').textContent = JSON.stringify(userData, null, 2);
             document.getElementById('user-info').style.display = 'block';
         } catch (error) {
-            console.error('Erreur lors de la récupération des informations:', error);
             alert(`Erreur: ${error.message}`);
         }
+    });
+
+    // Utilisateurs
+    document.getElementById('get-users-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/users`);
+        const users = await res.json();
+        document.getElementById('users-list').textContent = JSON.stringify(users, null, 2);
+    });
+    document.getElementById('create-user-btn').addEventListener('click', async () => {
+        const username = document.getElementById('new-username').value;
+        const email = document.getElementById('new-email').value;
+        const password = document.getElementById('new-password').value;
+        const role = document.getElementById('new-role').value;
+        const res = await fetch(`${API_BASE}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, role })
+        });
+        await showApiAlert(res, 'Utilisateur créé', 'Erreur lors de la création');
+    });
+    document.getElementById('update-user-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-id').value;
+        const username = document.getElementById('update-username').value;
+        const res = await fetch(`${API_BASE}/users/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        await showApiAlert(res, 'Utilisateur mis à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-user-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-id').value;
+        const res = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Utilisateur supprimé', 'Erreur lors de la suppression');
+    });
+
+    // Badges
+    document.getElementById('get-badges-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/badges`);
+        const badges = await res.json();
+        document.getElementById('badges-list').textContent = JSON.stringify(badges, null, 2);
+    });
+    document.getElementById('create-badge-btn').addEventListener('click', async () => {
+        const name = document.getElementById('new-badge-name').value;
+        const description = document.getElementById('new-badge-desc').value;
+        const rule = document.getElementById('new-badge-rule').value;
+        const res = await fetch(`${API_BASE}/badges`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description, rule })
+        });
+        await showApiAlert(res, 'Badge créé', 'Erreur lors de la création');
+    });
+    document.getElementById('update-badge-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-badge-id').value;
+        const name = document.getElementById('update-badge-name').value;
+        const res = await fetch(`${API_BASE}/badges/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        await showApiAlert(res, 'Badge mis à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-badge-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-badge-id').value;
+        const res = await fetch(`${API_BASE}/badges/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Badge supprimé', 'Erreur lors de la suppression');
+    });
+
+    // Salles
+    document.getElementById('get-rooms-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/gym-rooms`);
+        const rooms = await res.json();
+        document.getElementById('rooms-list').textContent = JSON.stringify(rooms, null, 2);
+    });
+    document.getElementById('create-room-btn').addEventListener('click', async () => {
+        const name = document.getElementById('new-room-name').value;
+        const location = document.getElementById('new-room-location').value;
+        const ownerId = document.getElementById('new-room-owner').value;
+        const contact = document.getElementById('new-room-contact').value;
+        const address = document.getElementById('new-room-address').value;
+        const capacity = document.getElementById('new-room-capacity').value;
+        const res = await fetch(`${API_BASE}/gym-rooms`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, location, ownerId, contact, address, capacity })
+        });
+        await showApiAlert(res, 'Salle créée', 'Erreur lors de la création');
+    });
+    document.getElementById('update-room-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-room-id').value;
+        const name = document.getElementById('update-room-name').value;
+        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        await showApiAlert(res, 'Salle mise à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-room-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-room-id').value;
+        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Salle supprimée', 'Erreur lors de la suppression');
+    });
+
+    // Challenges
+    document.getElementById('get-challenges-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/challenges`);
+        const challenges = await res.json();
+        document.getElementById('challenges-list').textContent = JSON.stringify(challenges, null, 2);
+    });
+    document.getElementById('create-challenge-btn').addEventListener('click', async () => {
+        const title = document.getElementById('new-challenge-title').value;
+        const description = document.getElementById('new-challenge-desc').value;
+        const creatorId = document.getElementById('new-challenge-creator').value;
+        const duration = document.getElementById('new-challenge-duration').value;
+        const res = await fetch(`${API_BASE}/challenges`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description, creatorId, duration })
+        });
+        await showApiAlert(res, 'Challenge créé', 'Erreur lors de la création');
+    });
+    document.getElementById('update-challenge-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-challenge-id').value;
+        const title = document.getElementById('update-challenge-title').value;
+        const res = await fetch(`${API_BASE}/challenges/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title })
+        });
+        await showApiAlert(res, 'Challenge mis à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-challenge-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-challenge-id').value;
+        const res = await fetch(`${API_BASE}/challenges/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Challenge supprimé', 'Erreur lors de la suppression');
+    });
+
+    // Types d'exercice
+    document.getElementById('get-types-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/exercise-types`);
+        const types = await res.json();
+        document.getElementById('types-list').textContent = JSON.stringify(types, null, 2);
+    });
+    document.getElementById('create-type-btn').addEventListener('click', async () => {
+        const name = document.getElementById('new-type-name').value;
+        const description = document.getElementById('new-type-desc').value;
+        const res = await fetch(`${API_BASE}/exercise-types`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, description })
+        });
+        await showApiAlert(res, 'Type créé', 'Erreur lors de la création');
+    });
+    document.getElementById('update-type-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-type-id').value;
+        const name = document.getElementById('update-type-name').value;
+        const res = await fetch(`${API_BASE}/exercise-types/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        await showApiAlert(res, 'Type mis à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-type-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-type-id').value;
+        const res = await fetch(`${API_BASE}/exercise-types/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Type supprimé', 'Erreur lors de la suppression');
+    });
+
+    // Stats d'entraînement
+    document.getElementById('get-stats-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/training-stats`);
+        const stats = await res.json();
+        document.getElementById('stats-list').textContent = JSON.stringify(stats, null, 2);
+    });
+    document.getElementById('create-stats-btn').addEventListener('click', async () => {
+        const userId = document.getElementById('new-stats-userId').value;
+        const challengeId = document.getElementById('new-stats-challengeId').value;
+        const progress = document.getElementById('new-stats-progress').value;
+        const totalCalories = document.getElementById('new-stats-totalCalories').value;
+        const res = await fetch(`${API_BASE}/training-stats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, challengeId, progress, totalCalories })
+        });
+        await showApiAlert(res, 'Stat créée', 'Erreur lors de la création');
+    });
+    document.getElementById('update-stats-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-stats-id').value;
+        const progress = document.getElementById('update-stats-progress').value;
+        const totalCalories = document.getElementById('update-stats-totalCalories').value;
+        const res = await fetch(`${API_BASE}/training-stats/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ progress, totalCalories })
+        });
+        await showApiAlert(res, 'Stat mise à jour', 'Erreur lors de la mise à jour');
+    });
+    document.getElementById('delete-stats-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-stats-id').value;
+        const res = await fetch(`${API_BASE}/training-stats/${id}`, { method: 'DELETE' });
+        await showApiAlert(res, 'Stat supprimée', 'Erreur lors de la suppression');
     });
 </script>
 </body>

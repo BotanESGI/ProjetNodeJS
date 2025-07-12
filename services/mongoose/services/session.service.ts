@@ -20,9 +20,9 @@ export class SessionService {
         if(!isValidObjectId(sessionId)) {
             return null;
         }
-        const session = this.sessionModel.findOne({
+        return this.sessionModel.findOne({
             _id: sessionId,
-        }).populate('user'); // populate permet de charger un objet d'une autre collection a partir de son id
-        return session;
+            expirationDate: { $gt: new Date() }
+        }).populate('user').exec();
     }
 }

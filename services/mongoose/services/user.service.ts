@@ -1,17 +1,17 @@
-import {Mongoose, Model, FilterQuery} from "mongoose";
-import {User} from "../../../models";
-import {userSchema} from "../schema";
-import {sha256} from "../../../utils";
+import { Mongoose, Model, FilterQuery, ObjectId, Document } from "mongoose";
+import { User } from "../../../models";
+import { userSchema } from "../schema";
+import { sha256 } from "../../../utils";
 
 // omit permet d'enlever des clés d'un type pour en créer un nouveau
 export type CreateUser = Omit<User, '_id' | 'createdAt' | 'updatedAt'>;
 
 export class UserService {
 
-    readonly userModel: Model<User>;
+    readonly userModel: Model<User & Document>;
 
     constructor(public readonly connection: Mongoose) {
-        this.userModel = connection.model('User', userSchema());
+        this.userModel = connection.model<User & Document>('User', userSchema);
     }
 
     async findUser(email: string, password?: string): Promise<User | null> {

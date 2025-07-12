@@ -1,16 +1,19 @@
-import {Timestamps} from "./timestamps";
+import { Timestamps } from './timestamps';
 
 export enum UserRole {
-    ADMIN = 'ADMIN',
-    EMPLOYEE = 'EMPLOYEE',
-    USER = 'USER'
+    ADMIN = 'admin',
+    OWNER = 'owner',
+    USER = 'user'
 }
 
 export interface User extends Timestamps {
     _id: string;
-    lastName: string;
-    firstName: string;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
     email: string;
     password: string;
     role: UserRole;
+    isActive: boolean;
+    badges: string[];
 }
