@@ -1,0 +1,9 @@
+services:
+  tsnessgym_mongo:
+    image: mongo:latest
+    restart: always
+    ports:
+      - 27400:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: esgi
+      MONGO_INITDB_ROOT_PASSWORD: mongoroot

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSnessGYM API Interface</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .card {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .user-info {
+            margin-top: 20px;
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<h1>TSnessGYM API Interface</h1>
+
+<div class="card">
+    <h2>Authentification</h2>
+    <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" id="email" value="tsnessgym2@yopmail.com">
+    </div>
+    <div class="form-group">
+        <label for="password">Mot de passe:</label>
+        <input type="password" id="password" value="tsnessgym">
+    </div>
+    <button id="login-btn">Se connecter</button>
+
+    <div id="token-display" style="margin-top: 10px; display: none;">
+        <h3>Token de session:</h3>
+        <pre id="token-value"></pre>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Profil utilisateur</h2>
+    <button id="get-me-btn">Récupérer mes informations</button>
+    <div id="user-info" class="user-info">
+        <h3>Informations utilisateur:</h3>
+        <pre id="user-data"></pre>
+    </div>
+</div>
+
+<script>
+    let authToken = '';
+    const API_BASE = 'http://localhost:3001';
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur de connexion: ${response.status}`);
+            }
+
+            const data = await response.json();
+            authToken = data._id;
+
+            document.getElementById('token-value').textContent = authToken;
+            document.getElementById('token-display').style.display = 'block';
+
+            alert('Connexion réussie!');
+        } catch (error) {
+            console.error('Erreur de connexion:', error);
+            alert(`Erreur de connexion: ${error.message}`);
+        }
+    });
+
+    document.getElementById('get-me-btn').addEventListener('click', async () => {
+        if (!authToken) {
+            alert('Veuillez vous connecter d\'abord!');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/auth/me`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erreur: ${response.status}`);
+            }
+
+            const userData = await response.json();
+            document.getElementById('user-data').textContent = JSON.stringify(userData, null, 2);
+            document.getElementById('user-info').style.display = 'block';
+        } catch (error) {
+            console.error('Erreur lors de la récupération des informations:', error);
+            alert(`Erreur: ${error.message}`);
+        }
+    });
+</script>
+</body>
+</html>
