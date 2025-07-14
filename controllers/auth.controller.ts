@@ -19,9 +19,13 @@ export class AuthController {
             res.status(401).end();
             return;
         }
+        if (user.isActive === false) {
+            res.status(403).json({ message: "Compte désactivé" });
+            return;
+        }
         const session = await this.sessionService.createSession({
             user: user,
-            expirationDate: new Date(Date.now() + 1_296_000_000) // eq NOW + 15 jours en millis 15 * 86_400 * 1000
+            expirationDate: new Date(Date.now() + 1_296_000_000)
         });
         res.status(201).json(session);
     }

@@ -1,29 +1,81 @@
+import { Router, Request, Response, json } from 'express';
 import User from '../services/mongoose/schema/user.model';
-import { Request, Response } from 'express';
-import { sha256 } from '../utils';
+import { sessionMiddleware, isAdmin } from '../middlewares';
+import { UserService, SessionService } from "../services/mongoose";
+import mongoose from 'mongoose';
 
-export const getAllUsers = async (req: Request, res: Response) => {
-    const users = await User.find();
-    res.json(users);
-};
+export class UserController {
 
-export const createUser = async (req: Request, res: Response) => {
-    const userData = { ...req.body, password: sha256(req.body.password) };
-    const user = new User(userData);
-    await user.save();
-    res.status(201).json(user);
-};
+    constructor(
+        public readonly userService: UserService,
+        public readonly sessionService: SessionService
+    ) {}
 
-export const updateUser = async (req: Request, res: Response) => {
-    const updateData = { ...req.body };
-    if (updateData.password) {
-        updateData.password = sha256(updateData.password);
+    async getAllUsers(req: Request, res: Response) {
+        const users = await User.find();
+        res.json(users);
     }
-    const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    res.json(user);
-};
 
-export const deleteUser = async (req: Request, res: Response) => {
-    await User.findByIdAndDelete(req.params.id);
-    res.status(204).end();
-};
+    async disableUser(req: Request, res: Response) {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Identifiant invalide" });
+        }
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé" });
+        }
+        user.isActive = false;
+        await user.save();
+        res.json(user);
+    }
+
+    async deleteUser(req: Request, res: Response) {
+        const { id } = req.params;
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Identifiant invalide" });
+        }
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé" });
+        }
+        await User.findByIdAndDelete(id);
+        res.status(204).end();
+    }
+
+    buildRouter(): Router {
+        const router = Router();
+
+        router.get('/',
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            this.getAllUsers.bind(this)
+        );
+
+        router.patch(['/disable', '/'],
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            (req, res) => res.status(400).json({ message: "Identifiant obligatoire" })
+        );
+
+        router.patch('/disable/:id',
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            this.disableUser.bind(this)
+        );
+
+        router.delete(['/', ''],
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            (req, res) => res.status(400).json({ message: "Identifiant obligatoire" })
+        );
+
+        router.delete('/:id',
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            this.deleteUser.bind(this)
+        );
+
+        return router;
+    }
+}
