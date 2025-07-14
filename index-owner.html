@@ -54,23 +54,6 @@
     </div>
 </div>
 
-<!-- Utilisateurs CRUD -->
-<div class="card">
-    <h2>Utilisateurs</h2>
-    <button id="get-users-btn">Lister tous les utilisateurs</button>
-    <pre id="users-list"></pre>
-    <h3>Désactiver un utilisateur</h3>
-    <div class="form-group">
-        <input type="text" id="disable-id" placeholder="ID utilisateur">
-    </div>
-    <button id="disable-user-btn">Désactiver</button>
-    <h3>Supprimer un utilisateur</h3>
-    <div class="form-group">
-        <input type="text" id="delete-id" placeholder="ID utilisateur">
-    </div>
-    <button id="delete-user-btn">Supprimer</button>
-</div>
-
 <!-- Badges CRUD -->
 <div class="card">
     <h2>Badges (CRUD)</h2>
@@ -261,59 +244,6 @@
         } catch (error) {
             alert(`Erreur: ${error.message}`);
         }
-    });
-
-    // Utilisateurs
-    document.getElementById('get-users-btn').addEventListener('click', async () => {
-        if (!authToken) {
-            alert('Veuillez vous connecter d\'abord!');
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/users`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
-            });
-
-            if (res.ok) {
-                const users = await res.json();
-                document.getElementById('users-list').textContent = JSON.stringify(users, null, 2);
-            } else {
-                const errorData = await res.json();
-                alert(errorData.message || `Erreur ${res.status}: Accès refusé`);
-                document.getElementById('users-list').textContent = "Accès refusé: droits administrateur requis";
-            }
-        } catch (error) {
-            alert(`Erreur: ${error.message}`);
-            document.getElementById('users-list').textContent = "Erreur lors du chargement des utilisateurs";
-        }
-    });
-
-    // Désactivation d'utilisateur
-    document.getElementById('disable-user-btn').addEventListener('click', async () => {
-        const id = document.getElementById('disable-id').value.trim();
-        const res = await fetch(`${API_BASE}/users/disable/${id}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        await showApiAlert(res, 'Utilisateur désactivé', 'Erreur lors de la désactivation');
-    });
-
-    // Suppression d'utilisateur
-    document.getElementById('delete-user-btn').addEventListener('click', async () => {
-        const id = document.getElementById('delete-id').value;
-
-        const res = await fetch(`${API_BASE}/users/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        await showApiAlert(res, 'Utilisateur supprimé', 'Erreur lors de la suppression');
     });
 
     // Badges

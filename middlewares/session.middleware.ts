@@ -13,19 +13,19 @@ export function sessionMiddleware(sessionService: SessionService): RequestHandle
     return async (req: Request, res, next) => {
         const authorization = req.headers.authorization;
         if(!authorization) {
-            res.status(401).end();
+            return res.status(401).json({ message: "Authentification requise" });
             return;
         }
         // Authorization: Bearer XXX
         const parts = authorization.split(' ');
         if(parts.length !== 2 || parts[0] !== 'Bearer') {
-            res.status(401).end();
+            return res.status(401).json({ message: "Jeton Berarer manquant, merci de vous connecter" });
             return;
         }
         const token = parts[1];
         const session = await sessionService.findActiveSession(token);
         if(!session) {
-            res.status(401).end();
+            return res.status(401).json({ message: "Session invalide ou expirée" });
             return;
         }
         req.session = session;

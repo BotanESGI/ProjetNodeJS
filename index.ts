@@ -4,9 +4,9 @@ import cors from "cors";
 import { openConnection, SessionService, UserService } from "./services/mongoose";
 import { UserRole } from "./models";
 import { AuthController } from "./controllers/auth.controller";
+import { UserController } from "./controllers/user.controller"; // Ajout
 
-// Importation des routes CRUD
-import userRoutes from "./routes/user.routes";
+// Importation des autres routes CRUD
 import badgeRoutes from "./routes/badge.routes";
 import gymRoomRoutes from "./routes/gym-room.routes";
 import challengeRoutes from "./routes/challenge.routes";
@@ -24,8 +24,9 @@ async function startAPI() {
     app.use(cors());
     app.use(express.json());
 
-    // Ajout des routes CRUD
-    app.use('/users', userRoutes);
+    const userController = new UserController(userService, sessionService);
+    const userRouter = userController.buildRouter.bind(userController)();
+    app.use('/users', userRouter);
     app.use('/badges', badgeRoutes);
     app.use('/gym-rooms', gymRoomRoutes);
     app.use('/challenges', challengeRoutes);
@@ -33,7 +34,7 @@ async function startAPI() {
     app.use('/training-stats', trainingStatsRoutes);
 
     const authController = new AuthController(userService, sessionService);
-    app.use('/auth', authController.buildRouter());
+    app.use('/auth', authController.buildRouter.bind(authController)());
 
     app.listen(process.env.PORT, () => console.log(`API listening on port ${process.env.PORT}...`));
 }
