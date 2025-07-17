@@ -8,7 +8,7 @@ export async function isOwner(req: Request, res: Response, next: NextFunction) {
         return res.status(401).json({ message: 'Authentification requise' });
     }
     
-    if (user.role === UserRole.ADMIN) {
+    if (user.role === UserRole.OWNER || user.role === UserRole.ADMIN) {
         return next();
     }
     return res.status(403).json({ message: "Accès refusé : seul le propriétaire est autorisé" });

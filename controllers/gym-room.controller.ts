@@ -31,10 +31,14 @@ export class GymRoomController {
     async createGymRoom(req: Request, res: Response) {
         const data = { ...req.body };
         const user = req.user!;
+        console.log("user role:", user.role);
 
         if (user.role === UserRole.OWNER) {
             data.ownerId = user._id;
             data.approved = false;
+            let room = new GymRoom(data);
+            await room.save();
+            res.status(201).json(room);
         } else if (user.role === UserRole.ADMIN) {
             if (!data.ownerId) {
                 data.ownerId = user._id;
@@ -42,13 +46,14 @@ export class GymRoomController {
             if (typeof data.approved === "undefined") {
                 data.approved = true;
             }
+            let room = new GymRoom(data);
+                await room.save();
+                res.status(201).json(room);
         }
         else {
             return res.status(403).json({ message: "Seuls les propriétaires ou admin peuvent créer une salle." });
         }
-        const room = new GymRoom(data);
-        await room.save();
-        res.status(201).json(room);
+        
     }
 
     async updateGymRoom(req: Request, res: Response) {
@@ -137,8 +142,7 @@ export class GymRoomController {
         router.post(
             '/',
             sessionMiddleware(this.sessionService),
-            isOwner,
-            isAdmin,
+            isOwner,          
             this.createGymRoom.bind(this)
         );
 
