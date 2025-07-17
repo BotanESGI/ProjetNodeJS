@@ -1,7 +1,7 @@
 import GymRoom from '../services/mongoose/schema/gym-room.schema';
 import { Router, Request, Response } from 'express';
 import { sessionMiddleware, isAdmin } from '../middlewares';
-import { isOwnerOrAdmin } from '../middlewares/isOwnerOrAdmin.middleware';
+import { isOwner } from '../middlewares/isOwner.middleware';
 import { SessionService } from "../services/mongoose";
 import { UserRole } from '../models';
 
@@ -13,15 +13,18 @@ export class GymRoomController {
         let rooms;
 
         if (user.role === UserRole.ADMIN) {
-            rooms = await GymRoom.find();
+            rooms = await GymRoom.find({ approved: true});
         } else if (user.role === UserRole.OWNER) {
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
             if (hasApprovedRoom) {
                 rooms = await GymRoom.find({ approved: true });
-            } else {
+            } 
+            else {
                 return res.status(404).json({ message: "Accès refusé." });
             }
-        } 
+        } else if (user.role === UserRole.USER){  
+            rooms = await GymRoom.find();
+        }
         res.json(rooms);
     }
 
@@ -43,26 +46,41 @@ export class GymRoomController {
         else {
             return res.status(403).json({ message: "Seuls les propriétaires ou admin peuvent créer une salle." });
         }
-
         const room = new GymRoom(data);
         await room.save();
         res.status(201).json(room);
     }
 
     async updateGymRoom(req: Request, res: Response) {
+        const user = req.user!;
+        let room;
         if (!req.params.id) {
             return res.status(400).json({ message: "ID de salle requis pour la modification." });
         }
-        const room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if(user.role === UserRole.ADMIN) { 
+             room = await GymRoom.find({ _id: req.params.id, approved: true});
+            if (!room || room.length === 0) {
+                return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
+            }
+        }
+        room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!room) return res.status(404).json({ message: "Salle introuvable" });
         res.json(room);
     }
 
     async deleteGymRoom(req: Request, res: Response) {
+        const user = req.user!;
+        let room;
         if (!req.params.id) {
             return res.status(400).json({ message: "ID de salle requis pour la suppression." });
         }
-        const room = await GymRoom.findByIdAndDelete(req.params.id);
+         if(user.role === UserRole.ADMIN) { 
+             room = await GymRoom.find({ _id: req.params.id, approved: true});
+            if (!room || room.length === 0) {
+                return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
+            }
+        }
+        room = await GymRoom.findByIdAndDelete(req.params.id);
         if (!room) return res.status(404).json({ message: "Salle introuvable" });
         res.status(204).end();
     }
@@ -73,20 +91,22 @@ export class GymRoomController {
         if (!room) {
             return res.status(404).json({ message: "Salle introuvable" });
         }
-
-        if (user.role === UserRole.ADMIN) {
-            return res.json(room);
-        }
-
+       if (user.role === UserRole.ADMIN){
+          if (room.approved === false) {
+              return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
+            } else {
+                return res.json(room);
+            }
+        }        
         if (user.role === UserRole.OWNER) {
             const myApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
             if (myApprovedRoom && room.approved === true) {
                 return res.json(room);
             }
             return res.status(403).json({ message: "Accès refusé à cette salle." });
-        }
-
-        return res.json(room);
+        } if (user.role === UserRole.USER) {
+              return res.json(room); 
+            }
     }
 
 
@@ -117,21 +137,24 @@ export class GymRoomController {
         router.post(
             '/',
             sessionMiddleware(this.sessionService),
-            isOwnerOrAdmin,
+            isOwner,
+            isAdmin,
             this.createGymRoom.bind(this)
         );
 
         router.put(
             '/:id',
             sessionMiddleware(this.sessionService),
-            isOwnerOrAdmin,
+            isOwner,
+            isAdmin,
             this.updateGymRoom.bind(this)
         );
 
         router.delete(
             '/:id',
             sessionMiddleware(this.sessionService),
-            isOwnerOrAdmin,
+            isOwner,
+            isAdmin,
             this.deleteGymRoom.bind(this)
         );
 
