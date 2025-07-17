@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import { getAllBadges, createBadge, updateBadge, deleteBadge } from '../controllers/badge.controller';
+//import { Router } from 'express';
+//import { getAllBadges, createBadge, updateBadge, deleteBadge } from '../controllers/badge.controller';
 
-const router = Router();
+//const router = Router();
 
-router.get('/', getAllBadges);
-router.post('/', createBadge);
-router.put('/:id', updateBadge);
-router.delete('/:id', deleteBadge);
+//router.get('/', getAllBadges);
+//router.post('/', createBadge);
+//router.put('/:id', updateBadge);
+//router.delete('/:id', deleteBadge);
 
-export default router;
+//export default router;
