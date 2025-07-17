@@ -8,7 +8,7 @@ import { UserController } from "./controllers/user.controller"; // Ajout
 
 // Importation des autres routes CRUD
 import badgeRoutes from "./routes/badge.routes";
-import gymRoomRoutes from "./routes/gym-room.routes";
+//import gymRoomRoutes from "./routes/gym-room.routes";
 import challengeRoutes from "./routes/challenge.routes";
 import exerciseTypeRoutes from "./routes/exercise-type.routes";
 import trainingStatsRoutes from "./routes/training-stats.routes";
@@ -28,7 +28,7 @@ async function startAPI() {
     const userRouter = userController.buildRouter.bind(userController)();
     app.use('/users', userRouter);
     app.use('/badges', badgeRoutes);
-    app.use('/gym-rooms', gymRoomRoutes);
+   // app.use('/gym-rooms', gymRoomRoutes);
     app.use('/challenges', challengeRoutes);
     app.use('/exercise-types', exerciseTypeRoutes);
     app.use('/training-stats', trainingStatsRoutes);
