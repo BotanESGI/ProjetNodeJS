@@ -281,7 +281,9 @@
 
     // Salles
     document.getElementById('get-rooms-btn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/gym-rooms`);
+       const res = await fetch(`${API_BASE}/gym-rooms`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         const rooms = await res.json();
         document.getElementById('rooms-list').textContent = JSON.stringify(rooms, null, 2);
     });
@@ -294,7 +296,7 @@
         const capacity = document.getElementById('new-room-capacity').value;
         const res = await fetch(`${API_BASE}/gym-rooms`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json','Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({ name, location, ownerId, contact, address, capacity })
         });
         await showApiAlert(res, 'Salle créée', 'Erreur lors de la création');
