@@ -4,6 +4,7 @@ import { sessionMiddleware, isAdmin } from '../middlewares';
 import { isOwner } from '../middlewares/isOwner.middleware';
 import { SessionService } from "../services/mongoose";
 import { UserRole } from '../models';
+import User from '../services/mongoose/schema/user.model';
 
 export class GymRoomController {
     constructor(public readonly sessionService: SessionService) {}
@@ -20,7 +21,7 @@ export class GymRoomController {
                 rooms = await GymRoom.find({ approved: true });
             } 
             else {
-                return res.status(404).json({ message: "Accès refusé." });
+                return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });
             }
         } else if (user.role === UserRole.USER){  
             rooms = await GymRoom.find();
@@ -31,8 +32,6 @@ export class GymRoomController {
     async createGymRoom(req: Request, res: Response) {
         const data = { ...req.body };
         const user = req.user!;
-        console.log("user role:", user.role);
-
         if (user.role === UserRole.OWNER) {
             data.ownerId = user._id;
             data.approved = false;
@@ -62,15 +61,31 @@ export class GymRoomController {
         if (!req.params.id) {
             return res.status(400).json({ message: "ID de salle requis pour la modification." });
         }
+        room = await GymRoom.findById(req.params.id);
+        if (!room) {
+            return res.status(404).json({ message: "Salle introuvable" });
+        }
         if(user.role === UserRole.ADMIN) { 
              room = await GymRoom.find({ _id: req.params.id, approved: true});
             if (!room || room.length === 0) {
                 return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
+            } else {
+                room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
+                res.json(room);
             }
+        } else if (user.role === UserRole.OWNER) {
+            room = await GymRoom.findOne({ownerId: user._id, _id: req.params.id, approved: true});
+            if (!room) {
+                return res.status(403).json({ message: "Accès refusé : Vous ne pouvez modifier que vos propres salles." });
+            } else if (room && req.body.approved === false) {
+                return res.status(403).json({ message: "Accès refusé : Veuillez envoyer une demande à l'administrateur." });
+            } else if (room ){
+                 room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
+                 res.json(room);
+            }
+        } else {
+            return res.status(403).json({ message: "Accès refusé : Seuls les propriétaires ou administrateurs peuvent modifier une salle." });
         }
-        room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!room) return res.status(404).json({ message: "Salle introuvable" });
-        res.json(room);
     }
 
     async deleteGymRoom(req: Request, res: Response) {
