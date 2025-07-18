@@ -2,11 +2,34 @@ import Challenge from '../services/mongoose/schema/challenge.schema';
 import User from '../services/mongoose/schema/user.schema';
 import Badge from '../services/mongoose/schema/badge.schema';
 import { Request, Response } from 'express';
+import { UserRole } from '../models';
+
 
 export const getAllChallenges = async (req: Request, res: Response) => {
     const challenges = await Challenge.find();
     res.json(challenges);
 };
+
+//fetch challenges created by users only
+export const getUsersChallenge = async (req: Request, res: Response) =>{
+  try {
+    const challenges = await Challenge.find();
+
+    const creatorIds = challenges.map(challenge => challenge.creatorId);
+
+    const users = await User.find({ _id: { $in: creatorIds }, role: "user" });
+
+    const userIdsSet = new Set(users.map(user => user._id.toString()));
+
+    const filteredChallenges = challenges.filter(challenge =>
+      userIdsSet.has(challenge.creatorId.toString())
+    );
+
+    res.json(filteredChallenges);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la récupération des challenges." });
+  }
+}
 
 export const createChallenge = async (req: Request, res: Response) => {
     const challenge = new Challenge(req.body);

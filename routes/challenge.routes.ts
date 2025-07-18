@@ -1,9 +1,11 @@
 import { Router } from 'express';
-import { getAllChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challenge.controller';
+import { getAllChallenges, createChallenge, updateChallenge, deleteChallenge,getUsersChallenge } from '../controllers/challenge.controller';
+import { get } from 'http';
 
 const router = Router();
 
 router.get('/', getAllChallenges);
+router.get('/users', getUsersChallenge);
 router.post('/', createChallenge);
 router.put('/:id', updateChallenge);
 router.delete('/:id', deleteChallenge);
