@@ -4,7 +4,6 @@ import { sessionMiddleware, isAdmin } from '../middlewares';
 import { isOwner } from '../middlewares/isOwner.middleware';
 import { SessionService } from "../services/mongoose";
 import { UserRole } from '../models';
-import User from '../services/mongoose/schema/user.model';
 
 export class GymRoomController {
     constructor(public readonly sessionService: SessionService) {}
@@ -88,6 +87,16 @@ export class GymRoomController {
         }
     }
 
+    async disapproveGymRoom (req:Request, res: Response){
+        let room;
+        if(!req.params.id){
+            return res.status(400).json({message: "ID de salle requis pour la désapprobation."});
+        }
+        room = await GymRoom.findByIdAndUpdate(req.params.id, { approved: false }, { new: true });
+        if (!room) return res.status(404).json({ message: "Salle introuvable" });
+        res.json(room);
+    }
+
     async deleteGymRoom(req: Request, res: Response) {
         const user = req.user!;
         let room;
@@ -98,6 +107,8 @@ export class GymRoomController {
              room = await GymRoom.find({ _id: req.params.id, approved: true});
             if (!room || room.length === 0) {
                 return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
+            } else {
+                this.disapproveGymRoom(req, res);
             }
         }
         room = await GymRoom.findByIdAndDelete(req.params.id);
@@ -182,6 +193,13 @@ export class GymRoomController {
             sessionMiddleware(this.sessionService),
             isAdmin,
             this.approveGymRoom.bind(this)
+        );
+
+        router.patch(
+            '/:id/disapprove',
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            this.disapproveGymRoom.bind(this)
         );
 
         return router;
