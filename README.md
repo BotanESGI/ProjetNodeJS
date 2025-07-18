@@ -20,7 +20,7 @@ sport faisant une demande. L'administrateur peut définir le nom, la capacité d
 disponibles et d'autres caractéristiques de chaque salle tout comme un responsable de salle.
 Attribution de salles spécifiques à des types d'exercices ou à des niveaux de difficulté.
 
-Gestion des Types d'Exercices :
+Gestion des Types d'Exercices : ✅
 Ajout, modification et suppression des types d'exercices disponibles. Chaque type d'exercice peut être défini
 avec un nom, une description et des informations sur les muscles ciblés.
 
@@ -29,9 +29,9 @@ Possibilité pour l'administrateur de créer des badges et des récompenses virt
 utilisateurs en fonction de leurs accomplissements dans les défis. Des badges devront être ajouté
 dynamiquement au système depuis une interface en utilisant des règles.
 
-Gestion des Utilisateurs :
+Gestion des Utilisateurs : ✅
 Capacité à désactiver ou supprimer des comptes d'utilisateurs ainsi que des propriétaire de salle en cas de
-besoin.✅
+besoin.
 ---
 
 # Côté Utilisateur - Propriétaire de Salle de Sport
