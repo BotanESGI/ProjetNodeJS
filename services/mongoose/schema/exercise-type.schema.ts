@@ -1,9 +1,12 @@
-import mongoose from 'mongoose';
+import { Schema, model } from 'mongoose';
 
-const ExerciseTypeSchema = new mongoose.Schema({
-    name:         { type: String, required: true },
-    description:  { type: String, required: true },
-    targetMuscles:[{ type: String, required: true }]
+const ExerciseSchema = new Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    description: String,
+    targetMuscles: [String]
 }, { timestamps: true });
 
-export default mongoose.model('ExerciseType', ExerciseTypeSchema);
+export default model('Exercise', ExerciseSchema);

@@ -61,12 +61,12 @@
     <pre id="users-list"></pre>
     <h3>Désactiver un utilisateur</h3>
     <div class="form-group">
-        <input type="text" id="disable-id" placeholder="ID utilisateur">
+        <select id="disable-id"></select>
     </div>
     <button id="disable-user-btn">Désactiver</button>
     <h3>Supprimer un utilisateur</h3>
     <div class="form-group">
-        <input type="text" id="delete-id" placeholder="ID utilisateur">
+        <select id="delete-id"></select>
     </div>
     <button id="delete-user-btn">Supprimer</button>
 </div>
@@ -150,28 +150,34 @@
     <button id="delete-challenge-btn">Supprimer</button>
 </div>
 
-<!-- Types d'exercice CRUD -->
+<!-- Exercices CRUD -->
 <div class="card">
-    <h2>Types d'exercice (CRUD)</h2>
-    <button id="get-types-btn">Lister tous les types</button>
-    <pre id="types-list"></pre>
-    <h3>Créer un type</h3>
+    <h2>Type d'exercices (CRUD)</h2>
+    <button id="get-exercises-btn">Lister tous les exercices</button>
+    <pre id="exercises-list"></pre>
+    <h3>Créer un exercice</h3>
     <div class="form-group">
-        <input type="text" id="new-type-name" placeholder="Nom du type">
-        <input type="text" id="new-type-desc" placeholder="Description">
+        <input type="text" id="new-exercise-name" placeholder="Nom de l'exercice">
+        <input type="text" id="new-exercise-desc" placeholder="Description">
+        <input type="text" id="new-exercise-muscles" placeholder="Muscles ciblés (séparés par des virgules)">
     </div>
-    <button id="create-type-btn">Créer</button>
-    <h3>Mettre à jour un type</h3>
+    <button id="create-exercise-btn">Créer</button>
+    <!-- Mettre à jour un exercice -->
+    <h3>Mettre à jour un exercice</h3>
     <div class="form-group">
-        <input type="text" id="update-type-id" placeholder="ID type">
-        <input type="text" id="update-type-name" placeholder="Nouveau nom">
+        <select id="update-exercise-id"></select>
+        <input type="text" id="update-exercise-name" placeholder="Nouveau nom">
+        <input type="text" id="update-exercise-desc" placeholder="Nouvelle description">
+        <input type="text" id="update-exercise-muscles" placeholder="Nouveaux muscles (séparés par des virgules)">
     </div>
-    <button id="update-type-btn">Mettre à jour</button>
-    <h3>Supprimer un type</h3>
+    <button id="update-exercise-btn">Mettre à jour</button>
+
+    <!-- Supprimer un exercice -->
+    <h3>Supprimer un exercice</h3>
     <div class="form-group">
-        <input type="text" id="delete-type-id" placeholder="ID type">
+        <select id="delete-exercise-id"></select>
     </div>
-    <button id="delete-type-btn">Supprimer</button>
+    <button id="delete-exercise-btn">Supprimer</button>
 </div>
 
 <!-- Statistiques d'entraînement CRUD -->
@@ -242,6 +248,8 @@ authToken = data.token || data._id;
         } catch (error) {
             alert(`Erreur de connexion: ${error.message}`);
         }
+        await populateUserSelects();
+        await populateExerciseSelects();
     });
 
     document.getElementById('get-me-btn').addEventListener('click', async () => {
@@ -289,7 +297,59 @@ authToken = data.token || data._id;
             alert(`Erreur: ${error.message}`);
             document.getElementById('users-list').textContent = "Erreur lors du chargement des utilisateurs";
         }
+        await populateUserSelects();
     });
+
+    async function populateExerciseSelects() {
+        const res = await fetch(`${API_BASE}/exercises`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) return;
+        const exercises = await res.json();
+        const updateSelect = document.getElementById('update-exercise-id');
+        const deleteSelect = document.getElementById('delete-exercise-id');
+        updateSelect.innerHTML = '';
+        deleteSelect.innerHTML = '';
+        exercises.forEach(ex => {
+            const optionText = `${ex._id} - ${ex.name}`;
+            const opt1 = document.createElement('option');
+            opt1.value = ex._id;
+            opt1.textContent = optionText;
+            updateSelect.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = ex._id;
+            opt2.textContent = optionText;
+            deleteSelect.appendChild(opt2);
+        });
+    }
+
+    async function populateUserSelects() {
+        if (!authToken) return;
+        try {
+            const res = await fetch(`${API_BASE}/users`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (!res.ok) return;
+            const users = await res.json();
+            const disableSelect = document.getElementById('disable-id');
+            const deleteSelect = document.getElementById('delete-id');
+            disableSelect.innerHTML = '';
+            deleteSelect.innerHTML = '';
+            users.forEach(user => {
+                const optionText = `${user._id} - ${user.email} [${user.role}]`;
+                const option1 = document.createElement('option');
+                option1.value = user._id;
+                option1.textContent = optionText;
+                disableSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = user._id;
+                option2.textContent = optionText;
+                deleteSelect.appendChild(option2);
+            });
+        } catch {}
+    }
 
     // Désactivation d'utilisateur
     document.getElementById('disable-user-btn').addEventListener('click', async () => {
@@ -301,6 +361,7 @@ authToken = data.token || data._id;
             }
         });
         await showApiAlert(res, 'Utilisateur désactivé', 'Erreur lors de la désactivation');
+        await populateUserSelects();
     });
 
     // Suppression d'utilisateur
@@ -314,6 +375,7 @@ authToken = data.token || data._id;
             }
         });
         await showApiAlert(res, 'Utilisateur supprimé', 'Erreur lors de la suppression');
+        await populateUserSelects();
     });
 
     // Badges
@@ -436,36 +498,63 @@ const res = await fetch(`${API_BASE}/badges/${id}`, {
         await showApiAlert(res, 'Challenge supprimé', 'Erreur lors de la suppression');
     });
 
-    // Types d'exercice
-    document.getElementById('get-types-btn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/exercise-types`);
-        const types = await res.json();
-        document.getElementById('types-list').textContent = JSON.stringify(types, null, 2);
+    // Lister les exercices
+    document.getElementById('get-exercises-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/exercises`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const exercises = await res.json();
+        document.getElementById('exercises-list').textContent = JSON.stringify(exercises, null, 2);
     });
-    document.getElementById('create-type-btn').addEventListener('click', async () => {
-        const name = document.getElementById('new-type-name').value;
-        const description = document.getElementById('new-type-desc').value;
-        const res = await fetch(`${API_BASE}/exercise-types`, {
+
+    // Créer un exercice
+    document.getElementById('create-exercise-btn').addEventListener('click', async () => {
+        const name = document.getElementById('new-exercise-name').value;
+        const description = document.getElementById('new-exercise-desc').value;
+        const muscles = document.getElementById('new-exercise-muscles').value.split(',').map(m => m.trim());
+        const res = await fetch(`${API_BASE}/exercises`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, description, muscles })
         });
-        await showApiAlert(res, 'Type créé', 'Erreur lors de la création');
+        await showApiAlert(res, 'Exercice créé', 'Erreur lors de la création');
+        await populateExerciseSelects();
     });
-    document.getElementById('update-type-btn').addEventListener('click', async () => {
-        const id = document.getElementById('update-type-id').value;
-        const name = document.getElementById('update-type-name').value;
-        const res = await fetch(`${API_BASE}/exercise-types/${id}`, {
+
+    // Mettre à jour un exercice
+   document.getElementById('update-exercise-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-exercise-id').value;
+        const name = document.getElementById('update-exercise-name').value;
+        const description = document.getElementById('update-exercise-desc').value;
+        const muscles = document.getElementById('update-exercise-muscles').value
+            .split(',')
+            .map(m => m.trim())
+            .filter(m => m);
+
+        const res = await fetch(`${API_BASE}/exercises/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, description, muscles })
         });
-        await showApiAlert(res, 'Type mis à jour', 'Erreur lors de la mise à jour');
+        await showApiAlert(res, 'Exercice mis à jour', 'Erreur lors de la mise à jour');
+        await populateExerciseSelects();
     });
-    document.getElementById('delete-type-btn').addEventListener('click', async () => {
-        const id = document.getElementById('delete-type-id').value;
-        const res = await fetch(`${API_BASE}/exercise-types/${id}`, { method: 'DELETE' });
-        await showApiAlert(res, 'Type supprimé', 'Erreur lors de la suppression');
+
+    // Supprimer un exercice
+    document.getElementById('delete-exercise-btn').addEventListener('click', async () => {
+        const id = document.getElementById('delete-exercise-id').value;
+        const res = await fetch(`${API_BASE}/exercises/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        await showApiAlert(res, 'Exercice supprimé', 'Erreur lors de la suppression');
+        await populateExerciseSelects();
     });
 
     // Stats d'entraînement
