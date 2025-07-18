@@ -235,7 +235,7 @@
                 throw new Error(data.message || `Erreur de connexion: ${response.status}`);
             }
             const data = await response.json();
-            authToken = data._id;
+authToken = data.token || data._id;
             document.getElementById('token-value').textContent = authToken;
             document.getElementById('token-display').style.display = 'block';
             alert('Connexion réussie!');
@@ -318,7 +318,11 @@
 
     // Badges
     document.getElementById('get-badges-btn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/badges`);
+const res = await fetch(`${API_BASE}/badges`, {//
+  headers: {
+    'Authorization': `Bearer ${authToken}`
+  }
+});//cette partie aussi je l'ai msi a jour
         const badges = await res.json();
         document.getElementById('badges-list').textContent = JSON.stringify(badges, null, 2);
     });
@@ -326,26 +330,39 @@
         const name = document.getElementById('new-badge-name').value;
         const description = document.getElementById('new-badge-desc').value;
         const rule = document.getElementById('new-badge-rule').value;
-        const res = await fetch(`${API_BASE}/badges`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, rule })
-        });
+       const res = await fetch(`${API_BASE}/badges`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`
+  },
+  body: JSON.stringify({ name, description, rule })
+});
+
         await showApiAlert(res, 'Badge créé', 'Erreur lors de la création');
     });
     document.getElementById('update-badge-btn').addEventListener('click', async () => {
         const id = document.getElementById('update-badge-id').value;
         const name = document.getElementById('update-badge-name').value;
-        const res = await fetch(`${API_BASE}/badges/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
+       const res = await fetch(`${API_BASE}/badges/${id}`, {
+    method: 'PUT',
+    headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    },
+    body: JSON.stringify({ name })
+});
+
         await showApiAlert(res, 'Badge mis à jour', 'Erreur lors de la mise à jour');
     });
     document.getElementById('delete-badge-btn').addEventListener('click', async () => {
         const id = document.getElementById('delete-badge-id').value;
-        const res = await fetch(`${API_BASE}/badges/${id}`, { method: 'DELETE' });
+const res = await fetch(`${API_BASE}/badges/${id}`, {
+    method: 'DELETE',
+    headers: {
+        'Authorization': `Bearer ${authToken}`
+    }
+});
         await showApiAlert(res, 'Badge supprimé', 'Erreur lors de la suppression');
     });
 
