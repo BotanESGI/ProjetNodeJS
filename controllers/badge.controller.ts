@@ -58,7 +58,7 @@ export class BadgeController {
     router.use(sessionMiddleware); // sécurise toutes les routes
     router.use(isAdmin);           // limite aux admins
 
-    router.get("/", isAdmin, this.getAllBadges.bind(this));
+    router.get("/", this.getAllBadges.bind(this));
     router.post("/", this.createBadge.bind(this));
     router.put("/:id", this.updateBadge.bind(this));
     router.delete("/:id", this.deleteBadge.bind(this));
