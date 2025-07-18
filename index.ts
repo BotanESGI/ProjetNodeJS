@@ -10,7 +10,8 @@ import { UserController } from "./controllers/user.controller"; // Ajout
 // Importation des autres routes CRUD
 //import gymRoomRoutes from "./routes/gym-room.routes";
 import { BadgeController } from "./controllers/badge.controller";
-import challengeRoutes from "./routes/challenge.routes";
+//import challengeRoutes from "./routes/challenge.routes";
+import { ChallengeController} from "./controllers/challenge.controller";
 import exerciseTypeRoutes from "./routes/exercise-type.routes";
 import trainingStatsRoutes from "./routes/training-stats.routes";
 import { GymRoomController } from "./controllers/gym-room.controller";
@@ -23,18 +24,19 @@ async function startAPI() {
     const sessionService = new SessionService(connection);
     const gymRoomController = new GymRoomController(sessionService);
     const gymRoomRouter = gymRoomController.buildRouter.bind(gymRoomController)();
+    const challengeController = new ChallengeController(sessionService);
     await bootstrapAPI(userService);
     const app = express();
     app.use(cors());
     app.use(express.json());
     const userController = new UserController(userService, sessionService);
     const userRouter = userController.buildRouter.bind(userController)();
-    app.use('/users', userRouter);
-    app.use('/challenges', challengeRoutes);
+    const challengeRouter = challengeController.buildRouter.bind(challengeController)();
+    app.use('/users', userRouter); 
+    app.use('/challenges', challengeRouter);
     app.use('/exercise-types', exerciseTypeRoutes);
     app.use('/training-stats', trainingStatsRoutes);
     app.use('/gym-rooms', gymRoomRouter);
-    app.use('/challenges', challengeRoutes);
     app.use('/exercise-types', exerciseTypeRoutes);
     app.use('/training-stats', trainingStatsRoutes);
     const badgeController = new BadgeController();
