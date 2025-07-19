@@ -85,13 +85,14 @@
     <button id="create-badge-btn">Créer</button>
     <h3>Mettre à jour un badge</h3>
     <div class="form-group">
-        <input type="text" id="update-badge-id" placeholder="ID badge">
+        <select id="update-badge-id"></select>
         <input type="text" id="update-badge-name" placeholder="Nouveau nom">
+        <input type="text" id="update-badge-desc" placeholder="Nouvelle description">
     </div>
     <button id="update-badge-btn">Mettre à jour</button>
     <h3>Supprimer un badge</h3>
     <div class="form-group">
-        <input type="text" id="delete-badge-id" placeholder="ID badge">
+        <select id="delete-badge-id"></select>
     </div>
     <button id="delete-badge-btn">Supprimer</button>
 </div>
@@ -250,6 +251,7 @@ authToken = data.token || data._id;
         }
         await populateUserSelects();
         await populateExerciseSelects();
+        await populateBadgeSelects();
     });
 
     document.getElementById('get-me-btn').addEventListener('click', async () => {
@@ -299,6 +301,30 @@ authToken = data.token || data._id;
         }
         await populateUserSelects();
     });
+
+    async function populateBadgeSelects() {
+        const res = await fetch(`${API_BASE}/badges`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) return;
+        const badges = await res.json();
+        const updateSelect = document.getElementById('update-badge-id');
+        const deleteSelect = document.getElementById('delete-badge-id');
+        updateSelect.innerHTML = '';
+        deleteSelect.innerHTML = '';
+        badges.forEach(badge => {
+            const optionText = `${badge._id} - ${badge.name}`;
+            const opt1 = document.createElement('option');
+            opt1.value = badge._id;
+            opt1.textContent = optionText;
+            updateSelect.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = badge._id;
+            opt2.textContent = optionText;
+            deleteSelect.appendChild(opt2);
+        });
+    }
 
     async function populateExerciseSelects() {
         const res = await fetch(`${API_BASE}/exercises`, {
@@ -380,52 +406,53 @@ authToken = data.token || data._id;
 
     // Badges
     document.getElementById('get-badges-btn').addEventListener('click', async () => {
-const res = await fetch(`${API_BASE}/badges`, {//
-  headers: {
-    'Authorization': `Bearer ${authToken}`
-  }
-});//cette partie aussi je l'ai msi a jour
+        const res = await fetch(`${API_BASE}/badges`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         const badges = await res.json();
         document.getElementById('badges-list').textContent = JSON.stringify(badges, null, 2);
     });
+
     document.getElementById('create-badge-btn').addEventListener('click', async () => {
         const name = document.getElementById('new-badge-name').value;
         const description = document.getElementById('new-badge-desc').value;
         const rule = document.getElementById('new-badge-rule').value;
-       const res = await fetch(`${API_BASE}/badges`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authToken}`
-  },
-  body: JSON.stringify({ name, description, rule })
-});
-
+        const res = await fetch(`${API_BASE}/badges`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, description, rule })
+        });
         await showApiAlert(res, 'Badge créé', 'Erreur lors de la création');
+        await populateBadgeSelects();
     });
-    document.getElementById('update-badge-btn').addEventListener('click', async () => {
-        const id = document.getElementById('update-badge-id').value;
-        const name = document.getElementById('update-badge-name').value;
-       const res = await fetch(`${API_BASE}/badges/${id}`, {
-    method: 'PUT',
-    headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
-    },
-    body: JSON.stringify({ name })
-});
 
+    document.getElementById('update-badge-btn').addEventListener('click', async () => {
+        const id = document.getElementById('update-badge-id').value.trim();
+        const name = document.getElementById('update-badge-name').value;
+        const description = document.getElementById('update-badge-desc').value;
+        const res = await fetch(`${API_BASE}/badges/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ name, description })
+        });
         await showApiAlert(res, 'Badge mis à jour', 'Erreur lors de la mise à jour');
+        await populateBadgeSelects();
     });
+
     document.getElementById('delete-badge-btn').addEventListener('click', async () => {
-        const id = document.getElementById('delete-badge-id').value;
-const res = await fetch(`${API_BASE}/badges/${id}`, {
-    method: 'DELETE',
-    headers: {
-        'Authorization': `Bearer ${authToken}`
-    }
-});
+        const id = document.getElementById('delete-badge-id').value.trim();
+        const res = await fetch(`${API_BASE}/badges/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         await showApiAlert(res, 'Badge supprimé', 'Erreur lors de la suppression');
+        await populateBadgeSelects();
     });
 
     // Salles

@@ -5,11 +5,11 @@ import { openConnection, SessionService, UserService } from "./services/mongoose
 import { UserRole } from "./models";
 import { AuthController } from "./controllers/auth.controller";
 import { UserController } from "./controllers/user.controller";
+import { BadgeController} from "./controllers/badge.controller";
 import { ExerciseController } from "./controllers/exercise-type.controller";
 
 // Importation des autres routes CRUD
 //import gymRoomRoutes from "./routes/gym-room.routes";
-import { BadgeController } from "./controllers/badge.controller";
 //import challengeRoutes from "./routes/challenge.routes";
 import { ChallengeController} from "./controllers/challenge.controller";
 import trainingStatsRoutes from "./routes/training-stats.routes";
@@ -32,17 +32,16 @@ async function startAPI() {
     app.use(express.json());
     const userController = new UserController(userService, sessionService);
     const userRouter = userController.buildRouter.bind(userController)();
+    const badgeController = new BadgeController(sessionService);
+    const badgeRouter = badgeController.buildRouter.bind(badgeController)();
     const challengeRouter = challengeController.buildRouter.bind(challengeController)();
     app.use('/users', userRouter); 
     app.use('/challenges', challengeRouter);
     app.use('/training-stats', trainingStatsRoutes);
     app.use('/gym-rooms', gymRoomRouter);
     app.use('/training-stats', trainingStatsRoutes);
-    const badgeController = new BadgeController();
-    const badgeRouter = badgeController.buildRouter.bind(badgeController)();
-    app.use('/badges', badgeRouter);
     app.use('/exercises', exerciseRouter);
-
+    app.use('/badges', badgeRouter);
 
     const authController = new AuthController(userService, sessionService);
     app.use('/auth', authController.buildRouter.bind(authController)());
