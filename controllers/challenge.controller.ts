@@ -25,22 +25,27 @@ export class ChallengeController {
         return res.json(challenges);
     };
 
-
     //get challenges created by users only
     async getUsersChallenge(req: Request, res: Response){
-    try {
-        const challenges = await Challenge.find();
-        const creatorIds = challenges.map(challenge => challenge.creatorId);
-        const users = await User.find({ _id: { $in: creatorIds }, role: "user" });
-        const userIdsSet = new Set(users.map(user => user._id.toString()));
-        const filteredChallenges = challenges.filter(challenge =>
-        userIdsSet.has(challenge.creatorId.toString())
-        );
-        return res.json(filteredChallenges);
-    } catch (err) {
-        return res.status(500).json({ message: "Erreur lors de la récupération des challenges." });
+        const user = req.user!;
+        try {
+            const users = await User.find({ role: "user" }, { _id: 1 });
+            const userIds = users.map(u => u._id);
+            const challenges = await Challenge.find({ creatorId: { $in: userIds } });
+            if(user.role === UserRole.OWNER){
+            const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
+                if (hasApprovedRoom) {
+                    return res.json(challenges);
+                } 
+                else 
+                    return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });        
+                }
+            return res.json(challenges);
+            } catch (err) {
+            return res.status(500).json({ message: "Erreur lors de la récupération des challenges créés par les utilisateurs." });
+        }   
     }
-    }
+    
 
     async getChallengesByCreatorId( req: Request, res: Response){
         try {
@@ -49,9 +54,9 @@ export class ChallengeController {
             if(!challenges){
                 return res.status(404).json({ message: "Cet utilisateur n'a aucun challenge enregistré." });
             }
-            res.json(challenges);
+            return res.json(challenges);
         }catch(err){
-            res.status(500).json({message : "Erreur lors de la récupération du challenge."});
+            return res.status(500).json({message : "Erreur lors de la récupération du challenge."});
         }
     }
 
@@ -176,17 +181,16 @@ export class ChallengeController {
                 sessionMiddleware(this.sessionService),
                 this.getAllChallenges.bind(this)
         );
+         router.get(
+                '/users',
+                sessionMiddleware(this.sessionService),
+                this.getUsersChallenge.bind(this)
+        );
 
         router.get(
                 '/:id',
                 sessionMiddleware(this.sessionService),
                 this.getChallengesByCreatorId.bind(this)
-        );
-
-        router.get(
-                '/users',
-                sessionMiddleware(this.sessionService),
-                this.getUsersChallenge.bind(this)
         );
 
         router.post(
