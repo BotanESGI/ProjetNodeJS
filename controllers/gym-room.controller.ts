@@ -82,12 +82,15 @@ export class GymRoomController {
                 return res.json(room);
             }
         } else if (user.role === UserRole.OWNER) {
-            room = await GymRoom.findOne({ownerId: user._id, _id: req.params.id, approved: true});
+            room = await GymRoom.findOne({ownerId: user._id, _id: req.params.id});
             if (!room) {
                 return res.status(403).json({ message: "Accès refusé : Vous ne pouvez modifier que vos propres salles." });
-            } else if (room && req.body.approved === false) {
+            } else if (room && (req.body.approved === false || req.body.approved === true)) {
                 return res.status(403).json({ message: "Accès refusé : Veuillez envoyer une demande à l'administrateur." });
-            } else if (room ){
+            } else if ( room && req.body.ownerId){
+                return res.status(403).json({message:"Accès refusé: vous ne pouvez pas modifier l'owner de cette salle, veuillez envoyer une demande à l'administrateur."})
+            }
+            else if (room){
                  room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
                  return res.json(room);
             }
