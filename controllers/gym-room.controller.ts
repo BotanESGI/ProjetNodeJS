@@ -28,12 +28,33 @@ export class GymRoomController {
     }
 
     async getGymRoomByOwnerID(req: Request, res:Response){
+        const user = req.user!;
         let rooms;
-        rooms = await GymRoom.find({ownerId: req.params.id});
-        if (!rooms){
-            return res.status(404).json({message :"ce propriétaire n'a encore aucune salle ajoutée à son nom."});
+        if(user.role === UserRole.OWNER) {
+            const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
+            if (hasApprovedRoom) {
+                rooms = await GymRoom.find({ownerId: req.params.id, approved:true});
+                if (!rooms.length) {
+                    return res.status(404).json({message :"ce propriétaire n'a encore aucune salle approuvée."});
+                }
+             return res.json(rooms);
+            } 
+            else {
+                return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });
+            }
+        } else if(user.role === UserRole.USER){
+            rooms = await GymRoom.find({ownerId: req.params.id, approved: true});
+            if(!rooms.length){
+                return res.status(404).json({message :"ce propriétaire n'a encore aucune salle approuvée."}); 
+            }
+            return res.json(rooms);
+        } else if(user.role === UserRole.ADMIN){
+            rooms = await GymRoom.find({ownerId: req.params.id});
+            if (!rooms.length){
+                return res.status(404).json({message :"ce propriétaire n'a encore aucune salle ajoutée à son nom."});
+            }
+            return res.json(rooms);
         }
-        return res.json(rooms);
     }
 
     async createGymRoom(req: Request, res: Response) {
