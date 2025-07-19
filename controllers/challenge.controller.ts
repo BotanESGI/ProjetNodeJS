@@ -11,10 +11,20 @@ import { isOwner } from '../middlewares/isOwner.middleware';
 export class ChallengeController {
     constructor(public readonly sessionService: SessionService) {}
 
-    async getAllChallenges (req: Request, res: Response){    
+    async getAllChallenges (req: Request, res: Response){   
+        const user = req.user!;
         const challenges = await Challenge.find();
-        res.json(challenges);
+        if(user.role === UserRole.OWNER){
+            const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
+                if (hasApprovedRoom) {
+                    return res.json(challenges);
+                } 
+                else 
+                    return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });        
+        }
+        return res.json(challenges);
     };
+
 
     //get challenges created by users only
     async getUsersChallenge(req: Request, res: Response){
