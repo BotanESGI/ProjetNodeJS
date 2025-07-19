@@ -255,7 +255,6 @@ authToken = data.token || data._id;
     });
 
     document.getElementById('get-me-btn').addEventListener('click', async () => {
-        if (!authToken) return alert('Veuillez vous connecter d\'abord!');
         try {
             const response = await fetch(`${API_BASE}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${authToken}` }
