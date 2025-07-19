@@ -274,11 +274,6 @@ authToken = data.token || data._id;
 
     // Utilisateurs
     document.getElementById('get-users-btn').addEventListener('click', async () => {
-        if (!authToken) {
-            alert('Veuillez vous connecter d\'abord!');
-            return;
-        }
-
         try {
             const res = await fetch(`${API_BASE}/users`, {
                 headers: {
