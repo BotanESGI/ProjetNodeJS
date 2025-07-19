@@ -66,3 +66,53 @@ peuvent également défier d'autres utilisateurs à rejoindre et à compléter l
 Récompenses et Badges : Les participants qui réussissent les défis peuvent recevoir des récompenses
 virtuelles et des badges pour leur accomplissement. Les classements des utilisateurs les plus actifs sont
 également affichés
+
+---
+
+
+# Gestion des Salles de Sport (`GymRoom`) — Règles d’accès & Rôles
+
+Ce module gère la création, la modification, la suppression, l’approbation et la consultation des salles de sport.  
+Les droits sont définis selon le rôle de l’utilisateur connecté :
+
+- **ADMIN** (administrateur)
+- **OWNER** (propriétaire)
+- **USER** (utilisateur classique)
+
+---
+
+## Règles d’accès selon les rôles
+
+### Affichage de toutes les salles (`GET /gymrooms`)
+- **ADMIN** : voit toutes les salles (approuvées ou non).
+- **OWNER** : voit toutes les salles approuvées, seulement s’il possède au moins une salle approuvée.
+- **USER** : voit toutes les salles approuvées.
+
+### Affichage des salles d’un propriétaire (`GET /gymrooms/owners/:id`)
+- **ADMIN** : voit toutes les salles (approuvées ou non) d’un propriétaire.
+- **OWNER** : voit uniquement les salles approuvées d’un propriétaire, s’il possède lui-même au moins une salle approuvée.
+- **USER** : voit uniquement les salles approuvées d’un propriétaire.
+
+### Création d’une salle (`POST /gymrooms`)
+- **ADMIN** : peut créer une salle pour n’importe quel propriétaire.
+- **OWNER** : peut créer une salle pour lui-même (en attente d’approbation).
+- **USER** : interdit.
+
+### Modification d’une salle (`PUT /gymrooms/:id`)
+- **ADMIN** : peut modifier n’importe quelle salle approuvée.
+- **OWNER** : peut modifier ses propres salles (sauf owner/approval).
+- **USER** : interdit.
+
+### Suppression ou désapprobation d’une salle (`DELETE /gymrooms/:id`, `PATCH /gymrooms/:id/disapprove`)
+- **ADMIN** : peut désapprouver (soft delete) une salle (elle devient invisible pour les users classiques).
+- **OWNER** : peut supprimer physiquement **sa propre salle non approuvée**.
+- **USER** : interdit.
+
+### Consultation détaillée (`GET /gymrooms/:id`)
+- **ADMIN** : accès à toutes les salles approuvées.
+- **OWNER** : accès aux salles approuvées, s’il possède au moins une salle approuvée.
+- **USER** : accès à toutes les salles approuvées.
+
+### Approbation/désapprobation (`PATCH /gymrooms/:id/approve`, `PATCH /gymrooms/:id/disapprove`)
+- **ADMIN** : peut approuver ou désapprouver n’importe quelle salle.
+- **OWNER**/**USER** : interdit.
