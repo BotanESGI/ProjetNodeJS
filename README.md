@@ -116,3 +116,58 @@ Les droits sont définis selon le rôle de l’utilisateur connecté :
 ### Approbation/désapprobation (`PATCH /gymrooms/:id/approve`, `PATCH /gymrooms/:id/disapprove`)
 - **ADMIN** : peut approuver ou désapprouver n’importe quelle salle.
 - **OWNER**/**USER** : interdit.
+
+---
+
+#  Gestion des Challenges (`ChallengeController`) — Règles d’accès & Rôles
+
+Ce module gère la création, la modification, la suppression, la consultation et le filtrage des challenges d’entraînement.  
+Les droits sont définis selon le rôle de l’utilisateur connecté :
+
+- **ADMIN** (administrateur)
+- **OWNER** (propriétaire de salle, avec au moins une salle approuvée)
+- **USER** (utilisateur classique)
+
+---
+
+## Règles d’accès selon les rôles
+
+### Affichage de tous les challenges (`GET /challenges`)
+- **ADMIN** : voit tous les challenges.
+- **OWNER** : voit tous les challenges, _uniquement s’il possède au moins une salle approuvée_.
+- **USER** : voit tous les challenges.
+
+### Affichage des challenges créés par les utilisateurs (`GET /challenges/users`)
+- **ADMIN** : accès à tous les challenges créés par des utilisateurs classiques.
+- **OWNER** : accès, _seulement si une salle approuvée_.
+- **USER** : accès classique.
+
+### Affichage des challenges par créateur (`GET /challenges/:id`)
+- **ADMIN** : accès à tous les challenges de n’importe quel utilisateur.
+- **OWNER** : accès à tous les challenges (si salle approuvée).
+- **USER** : accès _uniquement à ses propres challenges_.
+
+### Création d’un challenge (`POST /challenges`)
+- **ADMIN** : peut créer un challenge avec tous les paramètres.
+- **OWNER** : peut créer un challenge _seulement si une salle lui appartenant est approuvée_.
+- **USER** :
+  - Peut _seulement créer pour lui-même_ (`creatorId = user._id`).
+  - _Interdiction_ d’ajouter d’autres participants (`participantIds`), des badges (`badgeRewardIds`) ou une salle (`gymRoomId`).
+
+### Modification d’un challenge (`PUT /challenges/:id`)
+- **ADMIN** : peut modifier tous les challenges.
+- **USER** : peut modifier _uniquement ses propres challenges_ et _seuls certains champs_ (pas de modification des participants, badges ou salle).
+- **OWNER** : n’a pas le droit de modifier les challenges autres que les siens selon la logique.
+
+### Suppression d’un challenge (`DELETE /challenges/:id`)
+- **ADMIN** : peut supprimer tous les challenges.
+- **USER** : peut supprimer _ses propres challenges_.
+- **OWNER** : non spécifié dans la logique, par défaut non autorisé sauf si créateur.
+
+### Filtrage par durée (`GET /challenges/filter/duration?min=xx&max=yy`)
+- **ADMIN**/**OWNER**/**USER** : tous peuvent filtrer les challenges selon leur durée.
+
+### Filtrage par type d’exercice (`GET /challenges/filter/exercisetype/:exerciseTypeId`)
+- **ADMIN**/**OWNER**/**USER** : tous peuvent filtrer les challenges selon leur type d’exercice.
+
+---
