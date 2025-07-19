@@ -11,9 +11,8 @@ export class GymRoomController {
     async getAllGymRooms(req: Request, res: Response) {
         const user = req.user!;
         let rooms;
-
         if (user.role === UserRole.ADMIN) {
-            rooms = await GymRoom.find({ approved: true});
+            rooms = await GymRoom.find();
         } else if (user.role === UserRole.OWNER) {
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
             if (hasApprovedRoom) {
@@ -23,7 +22,7 @@ export class GymRoomController {
                 return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });
             }
         } else if (user.role === UserRole.USER){  
-            rooms = await GymRoom.find();
+            rooms = await GymRoom.find({ approved: true});
         }
         return res.json(rooms);
     }
