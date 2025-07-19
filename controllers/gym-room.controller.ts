@@ -25,7 +25,16 @@ export class GymRoomController {
         } else if (user.role === UserRole.USER){  
             rooms = await GymRoom.find();
         }
-        res.json(rooms);
+        return res.json(rooms);
+    }
+
+    async getGymRoomByOwnerID(req: Request, res:Response){
+        let rooms;
+        rooms = await GymRoom.find({ownerId: req.params.id});
+        if (!rooms){
+            return res.status(404).json({message :"ce propriétaire n'a encore aucune salle ajoutée à son nom."});
+        }
+        return res.json(rooms);
     }
 
     async createGymRoom(req: Request, res: Response) {
@@ -36,7 +45,7 @@ export class GymRoomController {
             data.approved = false;
             let room = new GymRoom(data);
             await room.save();
-            res.status(201).json(room);
+            return res.status(201).json(room);
         } else if (user.role === UserRole.ADMIN) {
             if (!data.ownerId) {
                 data.ownerId = user._id;
@@ -46,7 +55,7 @@ export class GymRoomController {
             }
             let room = new GymRoom(data);
                 await room.save();
-                res.status(201).json(room);
+               return res.status(201).json(room);
         }
         else {
             return res.status(403).json({ message: "Seuls les propriétaires ou admin peuvent créer une salle." });
@@ -70,17 +79,20 @@ export class GymRoomController {
                 return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
             } else {
                 room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
-                res.json(room);
+                return res.json(room);
             }
         } else if (user.role === UserRole.OWNER) {
-            room = await GymRoom.findOne({ownerId: user._id, _id: req.params.id, approved: true});
+            room = await GymRoom.findOne({ownerId: user._id, _id: req.params.id});
             if (!room) {
                 return res.status(403).json({ message: "Accès refusé : Vous ne pouvez modifier que vos propres salles." });
-            } else if (room && req.body.approved === false) {
+            } else if (room && (req.body.approved === false || req.body.approved === true)) {
                 return res.status(403).json({ message: "Accès refusé : Veuillez envoyer une demande à l'administrateur." });
-            } else if (room ){
+            } else if ( room && req.body.ownerId){
+                return res.status(403).json({message:"Accès refusé: vous ne pouvez pas modifier l'owner de cette salle, veuillez envoyer une demande à l'administrateur."})
+            }
+            else if (room){
                  room = await GymRoom.findByIdAndUpdate(req.params.id, req.body, { new: true });
-                 res.json(room);
+                 return res.json(room);
             }
         } else {
             return res.status(403).json({ message: "Accès refusé : Seuls les propriétaires ou administrateurs peuvent modifier une salle." });
@@ -94,7 +106,7 @@ export class GymRoomController {
         }
         room = await GymRoom.findByIdAndUpdate(req.params.id, { approved: false }, { new: true });
         if (!room) return res.status(404).json({ message: "Salle introuvable" });
-        res.json(room);
+        return res.json(room);
     }
 
     async deleteGymRoom(req: Request, res: Response) {
@@ -113,7 +125,7 @@ export class GymRoomController {
         }
         room = await GymRoom.findByIdAndDelete(req.params.id);
         if (!room) return res.status(404).json({ message: "Salle introuvable" });
-        res.status(204).end();
+        return res.status(204).end();
     }
 
     async getGymRoomById(req: Request, res: Response) {
@@ -147,7 +159,7 @@ export class GymRoomController {
         }
         const room = await GymRoom.findByIdAndUpdate(req.params.id, { approved: true }, { new: true });
         if (!room) return res.status(404).json({ message: "Salle introuvable" });
-        res.json(room);
+        return res.json(room);
     }
 
     buildRouter(): Router {
@@ -165,6 +177,12 @@ export class GymRoomController {
             this.getGymRoomById.bind(this)
         );
 
+        router.get('/owners/:id', 
+            sessionMiddleware(this.sessionService),
+            isOwner, 
+            this.getGymRoomByOwnerID.bind(this)
+        );
+
         router.post(
             '/',
             sessionMiddleware(this.sessionService),
@@ -176,7 +194,6 @@ export class GymRoomController {
             '/:id',
             sessionMiddleware(this.sessionService),
             isOwner,
-            isAdmin,
             this.updateGymRoom.bind(this)
         );
 
@@ -184,7 +201,6 @@ export class GymRoomController {
             '/:id',
             sessionMiddleware(this.sessionService),
             isOwner,
-            isAdmin,
             this.deleteGymRoom.bind(this)
         );
 
