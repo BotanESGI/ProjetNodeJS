@@ -11,9 +11,8 @@ export class GymRoomController {
     async getAllGymRooms(req: Request, res: Response) {
         const user = req.user!;
         let rooms;
-
         if (user.role === UserRole.ADMIN) {
-            rooms = await GymRoom.find({ approved: true});
+            rooms = await GymRoom.find();
         } else if (user.role === UserRole.OWNER) {
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
             if (hasApprovedRoom) {
@@ -23,7 +22,7 @@ export class GymRoomController {
                 return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });
             }
         } else if (user.role === UserRole.USER){  
-            rooms = await GymRoom.find();
+            rooms = await GymRoom.find({ approved: true});
         }
         return res.json(rooms);
     }
@@ -115,16 +114,22 @@ export class GymRoomController {
         if (!req.params.id) {
             return res.status(400).json({ message: "ID de salle requis pour la suppression." });
         }
-         if(user.role === UserRole.ADMIN) { 
-             room = await GymRoom.find({ _id: req.params.id, approved: true});
-            if (!room || room.length === 0) {
+        room = await GymRoom.findById(req.params.id);
+        if (!room) return res.status(404).json({ message: "Salle introuvable." });
+
+        if(user.role === UserRole.ADMIN) { 
+            if (!room.approved) {
                 return res.status(403).json({ message: "Accès refusé : Cette salle de sport ne vous appartient pas." });
             } else {
-                this.disapproveGymRoom(req, res);
+               room = await GymRoom.findByIdAndUpdate(req.params.id, { approved: false }, { new: true });
+               return res.status(204).json({message : "Cette salle ne fait plus partie de votre chaine."});
             }
+        } else if (user.role == UserRole.OWNER && room.ownerId.toString() === user._id.toString() && room.approved === true){
+            return res.status(403).json({message : "Accès refusé : veuillez demander à l'admin de la désapprouver avant de la supprimer."});
+        } else if ( user.role == UserRole.OWNER && room.ownerId.toString() !== user._id.toString() ){
+            return res.status(403).json({message : "Accès refusé : Cette salle de sport ne vous appartient pas."});
         }
-        room = await GymRoom.findByIdAndDelete(req.params.id);
-        if (!room) return res.status(404).json({ message: "Salle introuvable" });
+        await GymRoom.findByIdAndDelete(req.params.id);
         return res.status(204).end();
     }
 
