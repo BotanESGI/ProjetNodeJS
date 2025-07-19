@@ -6,7 +6,6 @@ import { UserRole } from '../models';
 import GymRoom from '../services/mongoose/schema/gym-room.schema';
 import { SessionService } from '../services/mongoose';
 import { sessionMiddleware, isAdmin } from '../middlewares';
-import { isOwner } from '../middlewares/isOwner.middleware';
 
 export class ChallengeController {
     constructor(public readonly sessionService: SessionService) {}
@@ -44,8 +43,7 @@ export class ChallengeController {
             } catch (err) {
             return res.status(500).json({ message: "Erreur lors de la récupération des challenges créés par les utilisateurs." });
         }   
-    }
-    
+    } 
 
     async getChallengesByCreatorId( req: Request, res: Response){
         try {
@@ -77,17 +75,17 @@ export class ChallengeController {
             }
             const challenge = new Challenge(req.body);
             await challenge.save();
-            res.status(201).json(challenge);   
+            return res.status(201).json(challenge);   
         } else if ( user.role === UserRole.ADMIN){
                 const challenge = new Challenge(req.body);
                 await challenge.save();
-                res.status(201).json(challenge);
+                return res.status(201).json(challenge);
         } else if (user.role === UserRole.OWNER) {  
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
                 if (hasApprovedRoom) {
                     const challenge = new Challenge(req.body);
                     await challenge.save();
-                    res.status(201).json(challenge);
+                   return res.status(201).json(challenge);
                 } 
                 else {
                     return res.status(404).json({ message: "Accès refusé : vous n'avez pas le droit pour le moment de créer des challenges." });
@@ -103,30 +101,36 @@ export class ChallengeController {
         if (!challenge) {
         return res.status(404).json({ message: "Challenge non trouvé" });
         }
-        const user = req.user;
+        const user = req.user!;
         const creator = await User.findById(challenge.creatorId);
         if(!creator){
             return res.status(403).json({ message: "créateur inconnu." });
         }
-        if(!user){
-            return res.status(403).json({ message: "Veuillez vous authentifier." });
-        } else if ( user.role === UserRole.USER && creator._id.equals(user._id) ){
+        if ( user.role === UserRole.USER && creator._id.equals(user._id) ){
+            if(
+                (req.body.creatorId && req.body.creatorId !== user._id.toString()) ||
+                (req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) ||
+                (req.body.participantIds && req.body.participantIds.length > 0) ||
+                (req.body.gymRoomId)
+            ){
+                return res.status(403).json({message:"Autorisation requise pour modifier ce champs."});
+            }
             const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
             if (updated && updated.status === 'completed' && updated.creatorId) {
             await this.checkAndAwardBadges(updated.creatorId.toString());
             }
-            res.json(updated);
+            return res.json(updated);
         } else if (user.role === UserRole.ADMIN) {
             const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
             if (updated && updated.status === 'completed' && updated.creatorId) {
             await this.checkAndAwardBadges(updated.creatorId.toString());
             }
-            res.json(updated);
+            return res.json(updated);
         } else {
             return res.status(403).json({ message: "Vous n'etes pas autorisé à modifier ce challenge." });
         }
     } catch (err) {
-        res.status(500).json({ message: "Erreur lors de la mise à jour du challenge." });
+        return res.status(500).json({ message: "Erreur lors de la mise à jour du challenge." });
     }
     };
 
@@ -142,11 +146,37 @@ export class ChallengeController {
                 return res.status(403).json({ message: "Accès refusé : vous n'êtes pas autorisé à supprimer ce challenge." });
             }   
             await Challenge.findByIdAndDelete(req.params.id);
-            res.status(204).end();
+            return res.status(204).end();
         }catch (err) {
-            res.status(500).json({ message: "Erreur lors de la suppression du challenge." });
+            return res.status(500).json({ message: "Erreur lors de la suppression du challenge." });
         }
     };
+
+    async filterChallengesByDuration(req: Request, res: Response) {
+        try {
+            const min = parseInt(req.query.min as string, 10) || 0;
+            const max = parseInt(req.query.max as string, 10) || Number.MAX_SAFE_INTEGER;
+            const challenges = await Challenge.find({
+                duration: { $gte: min, $lte: max }
+            });
+            return res.json(challenges);
+        } catch (err) {
+            return res.status(500).json({ message: "Erreur lors du filtrage par durée." });
+        }
+    }
+
+    async filterChallengesByExerciseType(req: Request, res: Response) {
+    try {
+        const exerciseTypeId = req.params.exerciseTypeId;
+        const challenges = await Challenge.find({
+            exerciseTypeIds: exerciseTypeId
+        });
+        return res.json(challenges);
+    } catch (err) {
+        return res.status(500).json({ message: "Erreur lors du filtrage par type d'exercice." });
+    }
+}
+
 
     //  Vérifie les règles et ajoute les badges si nécessaire
     async checkAndAwardBadges(userId: string): Promise<void> {
@@ -191,6 +221,18 @@ export class ChallengeController {
                 '/:id',
                 sessionMiddleware(this.sessionService),
                 this.getChallengesByCreatorId.bind(this)
+        );
+
+        router.get(
+            '/filter/duration', 
+            sessionMiddleware(this.sessionService), 
+            this.filterChallengesByDuration.bind(this)
+        );
+
+        router.get(
+            '/filter/exercisetype/:exerciseTypeId', 
+            sessionMiddleware(this.sessionService), 
+            this.filterChallengesByExerciseType.bind(this)
         );
 
         router.post(
