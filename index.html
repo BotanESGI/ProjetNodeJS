@@ -96,6 +96,20 @@
     </div>
     <button id="delete-badge-btn">Supprimer</button>
 </div>
+<!-- Récompenses CRUD -->
+<div class="card">
+    <h2>Récompenses (CRUD)</h2>
+    <button id="get-rewards-btn">Lister toutes les récompenses</button>
+    <pre id="rewards-list"></pre>
+
+    <h3>Créer une récompense</h3>
+    <div class="form-group">
+        <input type="text" id="new-reward-name" placeholder="Nom de la récompense">
+        <input type="text" id="new-reward-desc" placeholder="Description">
+        <input type="text" id="new-reward-rule" placeholder="Règle de la récompense">
+    </div>
+    <button id="create-reward-btn">Créer</button>
+</div>
 
 <!-- Salles CRUD -->
 <div class="card">
@@ -448,6 +462,46 @@ authToken = data.token || data._id;
         await showApiAlert(res, 'Badge supprimé', 'Erreur lors de la suppression');
         await populateBadgeSelects();
     });
+// Récompenses
+document.getElementById('get-rewards-btn').addEventListener('click', async () => {
+    try {
+        const res = await fetch(`${API_BASE}/rewards`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (res.ok) {
+            const rewards = await res.json();
+            document.getElementById('rewards-list').textContent = JSON.stringify(rewards, null, 2);
+        } else {
+            const error = await res.json();
+            document.getElementById('rewards-list').textContent = `Erreur ${res.status} : ${error.message || "Impossible de récupérer les récompenses"}`;
+        }
+    } catch (err) {
+        document.getElementById('rewards-list').textContent = `Erreur inattendue : ${err.message}`;
+    }
+});
+
+document.getElementById('create-reward-btn').addEventListener('click', async () => {
+    const name = document.getElementById('new-reward-name').value;
+    const description = document.getElementById('new-reward-desc').value;
+    const rule = document.getElementById('new-reward-rule').value;
+if (!name || !description || !rule) {
+  alert("Veuillez remplir tous les champs : Nom, Description, Règle.");
+  return;
+}
+
+    const res = await fetch(`${API_BASE}/rewards`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+body: JSON.stringify({ title: name, description, condition: rule })
+    });
+
+    await showApiAlert(res, 'Récompense créée', 'Erreur lors de la création de la récompense');
+        document.getElementById('get-rewards-btn').click(); 
+});
 
     // Salles
     document.getElementById('get-rooms-btn').addEventListener('click', async () => {
