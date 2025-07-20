@@ -6,6 +6,8 @@ import { UserRole } from '../models';
 import GymRoom from '../services/mongoose/schema/gym-room.schema';
 import { SessionService } from '../services/mongoose';
 import { sessionMiddleware, isAdmin } from '../middlewares';
+import Reward from '../services/mongoose/schema/reward.schema';
+import mongoose from "mongoose";
 
 export class ChallengeController {
     constructor(public readonly sessionService: SessionService) {}
@@ -117,12 +119,16 @@ export class ChallengeController {
             }
             const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
             if (updated && updated.status === 'completed' && updated.creatorId) {
+                    await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+
             await this.checkAndAwardBadges(updated.creatorId.toString());
             }
             return res.json(updated);
         } else if (user.role === UserRole.ADMIN) {
             const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
             if (updated && updated.status === 'completed' && updated.creatorId) {
+                    await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+
             await this.checkAndAwardBadges(updated.creatorId.toString());
             }
             return res.json(updated);
@@ -151,6 +157,58 @@ export class ChallengeController {
             return res.status(500).json({ message: "Erreur lors de la suppression du challenge." });
         }
     };
+async markAsCompleted(req: Request, res: Response) {
+    const challengeId = req.params.id;
+    const userId = req.user?._id;
+
+    if (!challengeId || !userId) {
+        return res.status(400).json({ message: "Challenge ID ou utilisateur non valide" });
+    }
+
+    const challenge = await Challenge.findById(challengeId);
+    if (!challenge) {
+        return res.status(404).json({ message: "Challenge non trouvé" });
+    }
+
+    // Vérifie si l'utilisateur est déjà dans completedBy
+if (challenge.completedBy.includes(new mongoose.Types.ObjectId(userId))) {
+        return res.status(409).json({ message: "Challenge déjà marqué comme terminé" });
+    }
+
+challenge.completedBy.push(new mongoose.Types.ObjectId(userId));
+challenge.status = 'completed'; 
+    await challenge.save();
+await this.checkAndAwardRewards(userId.toString());
+
+    return res.status(200).json({ message: "Challenge marqué comme terminé", challenge });
+}
+
+
+async checkAndAwardRewards(userId: string): Promise<void> {
+  const user = await User.findById(userId).populate("rewards");
+  if (!user) return;
+
+  const allRewards = await Reward.find();
+  const earnedRewardIds = user.rewards.map((r: any) => r._id.toString());
+
+  const completedCount = await Challenge.countDocuments({ creatorId: userId, status: "completed" });
+
+  for (const reward of allRewards) {
+    if (earnedRewardIds.includes(reward._id.toString())) continue;
+
+    const match = reward.condition.match(/^completed_challenges\s*>=\s*(\d+)$/);
+    if (match) {
+      const target = parseInt(match[1]);
+      if (completedCount >= target) {
+        user.rewards.push(reward._id);
+        console.log(`🎉 Récompense attribuée automatiquement : ${reward.title}`);
+      }
+    }
+  }
+
+  await user.save();
+}
+
 
     async filterChallengesByDuration(req: Request, res: Response) {
         try {
@@ -252,6 +310,12 @@ export class ChallengeController {
                 sessionMiddleware(this.sessionService),
                 this.deleteChallenge.bind(this)
         );
+        router.post(
+    '/:id/complete',
+    sessionMiddleware(this.sessionService),
+    this.markAsCompleted.bind(this)
+);
+
      return router;
     }
 }

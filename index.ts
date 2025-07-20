@@ -6,6 +6,8 @@ import { UserRole } from "./models";
 import { AuthController } from "./controllers/auth.controller";
 import { UserController } from "./controllers/user.controller";
 import { BadgeController} from "./controllers/badge.controller";
+import { RewardController } from "./controllers/reward.controller";
+
 import { ExerciseController } from "./controllers/exercise-type.controller";
 
 // Importation des autres routes CRUD
@@ -26,6 +28,9 @@ async function startAPI() {
     const challengeController = new ChallengeController(sessionService);
     const exerciseController = new ExerciseController(sessionService);
     const exerciseRouter = exerciseController.buildRouter.bind(exerciseController)();
+    const rewardController = new RewardController(sessionService);
+    const rewardRouter = rewardController.buildRouter();
+
     await bootstrapAPI(userService);
     const app = express();
     app.use(cors());
@@ -42,6 +47,8 @@ async function startAPI() {
     app.use('/training-stats', trainingStatsRoutes);
     app.use('/exercises', exerciseRouter);
     app.use('/badges', badgeRouter);
+    app.use('/rewards', rewardRouter);
+
 
     const authController = new AuthController(userService, sessionService);
     app.use('/auth', authController.buildRouter.bind(authController)());

@@ -25,5 +25,8 @@ export class UserService {
     async createUser(user: CreateUser): Promise<User> {
         return this.userModel.create({...user, password: sha256(user.password)});
     }
+async findByIdWithRewardsAndBadges(id: string): Promise<User | null> {
+    return this.userModel.findById(id).populate(['badges', 'rewards']);
+}
 
 }
