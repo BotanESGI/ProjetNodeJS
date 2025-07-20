@@ -7,7 +7,9 @@ export const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role:     { type: String, enum: Object.values(UserRole), required: true },
     isActive: { type: Boolean, default: true },
-    badges:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }]
+    badges:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }],
+    rewards:  [{ type: mongoose.Schema.Types.ObjectId, ref: 'Reward' }] // 👈 AJOUT
+
 }, { timestamps: true });
 
 export default mongoose.model("User", userSchema);

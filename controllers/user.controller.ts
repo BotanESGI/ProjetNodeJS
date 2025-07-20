@@ -42,6 +42,52 @@ export class UserController {
         await User.findByIdAndDelete(id);
         res.status(204).end();
     }
+    async getUserById(req: Request, res: Response) {
+    const { id } = req.params;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Identifiant invalide" });
+    }
+
+    try {
+        const user = await User.findById(id).populate(['badges', 'rewards']);
+        if (!user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé" });
+        }
+        return res.status(200).json(user);
+    } catch (err) {
+        return res.status(500).json({ message: "Erreur lors de la récupération de l'utilisateur" });
+    }
+}
+
+    async assignReward(req: Request, res: Response) {
+    const { id } = req.params; // ID utilisateur
+    const { rewardId } = req.body;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "ID utilisateur invalide" });
+    }
+
+    if (!rewardId || !mongoose.Types.ObjectId.isValid(rewardId)) {
+        return res.status(400).json({ message: "ID récompense invalide" });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Si la récompense est déjà attribuée
+    if (user.rewards.includes(rewardId)) {
+        return res.status(409).json({ message: "Récompense déjà attribuée" });
+    }
+
+    user.rewards.push(rewardId);
+    await user.save();
+
+    res.status(200).json({ message: "Récompense ajoutée à l'utilisateur", user });
+}
+
 
     buildRouter(): Router {
         const router = Router();
@@ -75,7 +121,16 @@ export class UserController {
             isAdmin,
             this.deleteUser.bind(this)
         );
-
+router.post('/:id/rewards',
+    sessionMiddleware(this.sessionService),
+    isAdmin,
+    this.assignReward.bind(this)
+);
+router.get('/:id',
+    sessionMiddleware(this.sessionService),
+    isAdmin,
+    this.getUserById.bind(this)
+);
         return router;
     }
 }
