@@ -11,11 +11,13 @@ export class UserController {
         public readonly userService: UserService,
         public readonly sessionService: SessionService
     ) {}
-
-    async getAllUsers(req: Request, res: Response) {
-        const users = await User.find();
-        res.json(users);
-    }
+async getAllUsers(req: Request, res: Response) {
+    const users = await User.find().populate({
+        path: 'rewards',
+        select: 'title description'
+    });
+    res.json(users);
+}
 
     async disableUser(req: Request, res: Response) {
         const { id } = req.params;
