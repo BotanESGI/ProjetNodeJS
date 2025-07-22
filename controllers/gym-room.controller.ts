@@ -188,6 +188,35 @@ export class GymRoomController {
         return res.json(room);
     }
 
+    async getFilteredGymRooms(req: Request, res:Response) {   
+        try {
+            const { exerciseId, difficultyLevel } = req.query;
+                if (!exerciseId && !difficultyLevel) {
+                    return res.status(400).json({ message: "Veuillez fournir au moins un critère de filtrage." });
+                }
+             const roomsByExercise = await GymRoom.find({ approved: true, exerciseTypes: { $exists: true, $ne: [], $in:[exerciseId]} });
+             const roomsByDifficulty = await GymRoom.find({ approved: true, difficultyLevels: { $exists: true, $ne: [], $in:[difficultyLevel]} });
+
+            if(exerciseId) {
+                if (roomsByExercise.length === 0) {
+                    return res.status(404).json({ message: "Aucune salle trouvée pour cet exercice." });
+                }
+                return res.json(roomsByExercise);
+            }
+
+            if(difficultyLevel) {
+                if (roomsByDifficulty.length === 0) {
+                    return res.status(404).json({ message: "Aucune salle trouvée pour ce niveau de difficulté." });
+                }
+                return res.json(roomsByDifficulty);
+            }
+            
+        } catch (err) {
+            return res.status(500).json({ message: "Erreur lors du filtrage des salles." });
+        }
+    }
+
+
     buildRouter(): Router {
         const router = Router();
 
@@ -195,6 +224,12 @@ export class GymRoomController {
             '/',
             sessionMiddleware(this.sessionService),
             this.getAllGymRooms.bind(this)
+        );
+
+        router.get(
+        '/filter',
+        sessionMiddleware(this.sessionService),
+        this.getFilteredGymRooms.bind(this)
         );
 
         router.get(
