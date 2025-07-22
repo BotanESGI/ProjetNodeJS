@@ -69,105 +69,168 @@ virtuelles et des badges pour leur accomplissement. Les classements des utilisat
 
 ---
 
+# 🏋️ GymRoomController – Routes & Logique Métier
 
-# Gestion des Salles de Sport (`GymRoom`) — Règles d’accès & Rôles
-
-Ce module gère la création, la modification, la suppression, l’approbation et la consultation des salles de sport.  
-Les droits sont définis selon le rôle de l’utilisateur connecté :
-
-- **ADMIN** (administrateur)
-- **OWNER** (propriétaire)
-- **USER** (utilisateur classique)
+Ce contrôleur gère la gestion des **salles de sport (Gym Rooms)** : création, modification, suppression, approbation et filtrage. Les accès sont contrôlés selon le **rôle** de l'utilisateur : `ADMIN`, `OWNER`, `USER`.
 
 ---
 
-## Règles d’accès selon les rôles
+## 🔀 Routes disponibles
 
-### Affichage de toutes les salles (`GET /gymrooms`)
-- **ADMIN** : voit toutes les salles (approuvées ou non).
-- **OWNER** : voit toutes les salles approuvées, seulement s’il possède au moins une salle approuvée.
-- **USER** : voit toutes les salles approuvées.
-
-### Affichage des salles d’un propriétaire (`GET /gymrooms/owners/:id`)
-- **ADMIN** : voit toutes les salles (approuvées ou non) d’un propriétaire.
-- **OWNER** : voit uniquement les salles approuvées d’un propriétaire, s’il possède lui-même au moins une salle approuvée.
-- **USER** : voit uniquement les salles approuvées d’un propriétaire.
-
-### Création d’une salle (`POST /gymrooms`)
-- **ADMIN** : peut créer une salle pour n’importe quel propriétaire.
-- **OWNER** : peut créer une salle pour lui-même (en attente d’approbation).
-- **USER** : interdit.
-
-### Modification d’une salle (`PUT /gymrooms/:id`)
-- **ADMIN** : peut modifier n’importe quelle salle approuvée.
-- **OWNER** : peut modifier ses propres salles (sauf owner/approval).
-- **USER** : interdit.
-
-### Suppression ou désapprobation d’une salle (`DELETE /gymrooms/:id`, `PATCH /gymrooms/:id/disapprove`)
-- **ADMIN** : peut désapprouver (soft delete) une salle (elle devient invisible pour les users classiques).
-- **OWNER** : peut supprimer physiquement **sa propre salle non approuvée**.
-- **USER** : interdit.
-
-### Consultation détaillée (`GET /gymrooms/:id`)
-- **ADMIN** : accès à toutes les salles approuvées.
-- **OWNER** : accès aux salles approuvées, s’il possède au moins une salle approuvée.
-- **USER** : accès à toutes les salles approuvées.
-
-### Approbation/désapprobation (`PATCH /gymrooms/:id/approve`, `PATCH /gymrooms/:id/disapprove`)
-- **ADMIN** : peut approuver ou désapprouver n’importe quelle salle.
-- **OWNER**/**USER** : interdit.
+### 1. `GET /`
+- **Description** : Récupère toutes les salles disponibles
+- **ADMIN** : Récupère toutes les salles
+- **OWNER** : Nécessite d’avoir **au moins une salle approuvée**
+- **USER** : Accès uniquement aux salles **approuvées**
 
 ---
 
-#  Gestion des Challenges (`ChallengeController`) — Règles d’accès & Rôles
+### 2. `GET /filter?exerciseId=...&difficultyLevel=...`
+- **Description** : Filtrer les salles par type d’exercice ou niveau de difficulté
+- **Paramètres** : 
+  - `exerciseId` (optionnel)
+  - `difficultyLevel` (optionnel)
+- **Conditions** : au moins un paramètre requis
+- **Résultat** : Salles **approuvées** correspondant aux critères
 
-Ce module gère la création, la modification, la suppression, la consultation et le filtrage des challenges d’entraînement.  
-Les droits sont définis selon le rôle de l’utilisateur connecté :
+---
 
-- **ADMIN** (administrateur)
-- **OWNER** (propriétaire de salle, avec au moins une salle approuvée)
-- **USER** (utilisateur classique)
+### 3. `GET /owners/:id`
+- **Description** : Récupère les salles approuvées d’un propriétaire
+- **Accès** :
+  - **OWNER** : doit avoir une salle approuvée
+  - **USER** : accès uniquement aux salles approuvées
+  - **ADMIN** : accès à **toutes** les salles du propriétaire
 
 ---
 
-## Règles d’accès selon les rôles
-
-### Affichage de tous les challenges (`GET /challenges`)
-- **ADMIN** : voit tous les challenges.
-- **OWNER** : voit tous les challenges, _uniquement s’il possède au moins une salle approuvée_.
-- **USER** : voit tous les challenges.
-
-### Affichage des challenges créés par les utilisateurs (`GET /challenges/users`)
-- **ADMIN** : accès à tous les challenges créés par des utilisateurs classiques.
-- **OWNER** : accès, _seulement si une salle approuvée_.
-- **USER** : accès classique.
-
-### Affichage des challenges par créateur (`GET /challenges/:id`)
-- **ADMIN** : accès à tous les challenges de n’importe quel utilisateur.
-- **OWNER** : accès à tous les challenges (si salle approuvée).
-- **USER** : accès _uniquement à ses propres challenges_.
-
-### Création d’un challenge (`POST /challenges`)
-- **ADMIN** : peut créer un challenge avec tous les paramètres.
-- **OWNER** : peut créer un challenge _seulement si une salle lui appartenant est approuvée_.
-- **USER** :
-  - Peut _seulement créer pour lui-même_ (`creatorId = user._id`).
-  - _Interdiction_ d’ajouter d’autres participants (`participantIds`), des badges (`badgeRewardIds`) ou une salle (`gymRoomId`).
-
-### Modification d’un challenge (`PUT /challenges/:id`)
-- **ADMIN** : peut modifier tous les challenges.
-- **USER** : peut modifier _uniquement ses propres challenges_ et _seuls certains champs_ (pas de modification des participants, badges ou salle).
-- **OWNER** : n’a pas le droit de modifier les challenges autres que les siens selon la logique.
-
-### Suppression d’un challenge (`DELETE /challenges/:id`)
-- **ADMIN** : peut supprimer tous les challenges.
-- **USER** : peut supprimer _ses propres challenges_.
-- **OWNER** : non spécifié dans la logique, par défaut non autorisé sauf si créateur.
-
-### Filtrage par durée (`GET /challenges/filter/duration?min=xx&max=yy`)
-- **ADMIN**/**OWNER**/**USER** : tous peuvent filtrer les challenges selon leur durée.
-
-### Filtrage par type d’exercice (`GET /challenges/filter/exercisetype/:exerciseTypeId`)
-- **ADMIN**/**OWNER**/**USER** : tous peuvent filtrer les challenges selon leur type d’exercice.
+### 4. `GET /:id`
+- **Description** : Récupère une salle par son ID
+- **ADMIN** : uniquement si elle est approuvée
+- **OWNER** : accès seulement à ses propres salles **approuvées**
+- **USER** : accès libre
 
 ---
+
+### 5. `POST /`
+- **Description** : Crée une nouvelle salle
+- **OWNER** :
+  - Ajoute la salle avec `approved: false` par défaut
+- **ADMIN** :
+  - Peut créer directement avec `approved: true` et assigner un `ownerId`
+- **USER** : **interdit**
+
+---
+
+### 6. `PUT /:id`
+- **Description** : Modifier une salle
+- **OWNER** :
+  - Ne peut pas modifier `approved` ni `ownerId`
+  - Peut modifier **uniquement ses propres salles**
+- **ADMIN** :
+  - Peut modifier **toute salle approuvée**
+
+---
+
+### 7. `PATCH /:id/approve`
+- **Description** : Approuve une salle
+- **Accès** : **ADMIN uniquement**
+
+---
+
+### 8. `PATCH /:id/disapprove`
+- **Description** : Désapprouve une salle
+- **Accès** : **ADMIN uniquement**
+
+---
+
+### 9. `DELETE /:id`
+- **Description** : Supprime une salle
+- **ADMIN** :
+  - Si approuvée → la désapprouve d’abord
+  - Sinon, supprime réellement
+- **OWNER** :
+  - Ne peut pas supprimer une salle **approuvée**
+  - Ne peut supprimer que **ses propres salles**
+
+---
+
+
+# 📘 ChallengeController – Routes & Logique Métier
+
+Ce contrôleur gère toute la logique liée aux **challenges** dans l'application. Il intègre des vérifications de rôle (USER, OWNER, ADMIN), des validations conditionnelles et des actions sur les entités Challenge, User, Badge, Reward.
+
+---
+
+## 🔀 Routes disponibles
+
+### 1. `GET /`
+- **Description** : Récupère tous les challenges
+- **Accès OWNER** : Doit posséder **une salle approuvée**
+- **Accès autres rôles** : Pas de restriction
+
+---
+
+### 2. `GET /users`
+- **Description** : Récupère tous les challenges créés par des utilisateurs ayant le rôle `"user"`
+- **Accès OWNER** : Nécessite une salle approuvée
+
+---
+
+### 3. `GET /filter/duration?min=...&max=...`
+- **Description** : Filtrer les challenges par **durée (min, max)**
+- **Champ MongoDB** : `duration` avec opérateurs `$gte` et `$lte`
+
+---
+
+### 4. `GET /filter/difficulty?difficulty=...`
+- **Description** : Filtrer les challenges selon la **difficulté**
+
+---
+
+### 5. `GET /filter/exercisetype/:exerciseTypeId`
+- **Description** : Filtrer selon le **type d'exercice**
+- **Champ** : `exerciseTypeIds` (tableau)
+
+---
+
+### 6. `PATCH /invite/:id`
+- **Description** : Invite des participants à un challenge
+- **Règles** :
+  - Seul le **créateur** ou un **admin** peut inviter
+  - Évite les doublons d’invitation
+  - Ajoute une entrée `invitations[]` pour chaque participant
+
+---
+
+### 8-7. `GET /:id`
+- **Description** : Récupère tous les challenges créés par **un utilisateur spécifique**
+- **Paramètre** : `:id` → `creatorId`
+
+---
+
+### 9. `POST /`
+- **Description** : Créer un challenge
+- **Règles par rôle** :
+  - **USER** : ne peut **assigner ni badge, ni participants, ni salle**
+  - **OWNER** : doit avoir une **salle approuvée**
+  - **ADMIN** : tous droits
+
+---
+
+### 10. `PUT /:id`
+- **Description** : Modifier un challenge
+- **Règles** :
+  - **USER** : ne peut modifier que **son challenge**, sans toucher à `participants`, `badges`, `salle`
+  - **ADMIN** : tout modifier
+  - Si le challenge passe à `completed`, déclenche l'attribution de badges/récompenses
+
+---
+
+### 11. `DELETE /:id`
+- **Description** : Supprime un challenge
+- **Accès** :
+  - Seulement le **créateur** ou un **admin**
+
+---
+
