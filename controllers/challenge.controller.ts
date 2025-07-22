@@ -224,17 +224,29 @@ async checkAndAwardRewards(userId: string): Promise<void> {
     }
 
     async filterChallengesByExerciseType(req: Request, res: Response) {
-    try {
-        const exerciseTypeId = req.params.exerciseTypeId;
-        const challenges = await Challenge.find({
-            exerciseTypeIds: exerciseTypeId
-        });
-        return res.json(challenges);
-    } catch (err) {
-        return res.status(500).json({ message: "Erreur lors du filtrage par type d'exercice." });
+        try {
+            const exerciseTypeId = req.params.exerciseTypeId;
+            const challenges = await Challenge.find({
+                exerciseTypeIds: exerciseTypeId
+            });
+            return res.json(challenges);
+        } catch (err) {
+            return res.status(500).json({ message: "Erreur lors du filtrage par type d'exercice." });
+        }
     }
-}
 
+    async filterChallengesByDifficulty(req: Request, res: Response) {
+        try {
+            const difficulty = req.query.difficulty as string;
+            const challenges = await Challenge.find({ difficulty });
+            if( challenges.length === 0) {
+                return res.status(404).json({ message: "Aucun challenge trouvé pour cette difficulté." });
+            }
+            return res.json(challenges);
+        } catch (err) {
+            return res.status(500).json({ message: "Erreur lors du filtrage par difficulté." });
+        }
+    }
 
     //  Vérifie les règles et ajoute les badges si nécessaire
     async checkAndAwardBadges(userId: string): Promise<void> {
@@ -275,22 +287,28 @@ async checkAndAwardRewards(userId: string): Promise<void> {
                 this.getUsersChallenge.bind(this)
         );
 
-        router.get(
-                '/:id',
-                sessionMiddleware(this.sessionService),
-                this.getChallengesByCreatorId.bind(this)
-        );
-
-        router.get(
+         router.get(
             '/filter/duration', 
             sessionMiddleware(this.sessionService), 
             this.filterChallengesByDuration.bind(this)
         );
 
         router.get(
+            '/filter/difficulty', 
+            sessionMiddleware(this.sessionService), 
+            this.filterChallengesByDifficulty.bind(this)
+        );
+        
+        router.get(
             '/filter/exercisetype/:exerciseTypeId', 
             sessionMiddleware(this.sessionService), 
             this.filterChallengesByExerciseType.bind(this)
+        );
+
+        router.get(
+                '/:id',
+                sessionMiddleware(this.sessionService),
+                this.getChallengesByCreatorId.bind(this)
         );
 
         router.post(
@@ -311,9 +329,9 @@ async checkAndAwardRewards(userId: string): Promise<void> {
                 this.deleteChallenge.bind(this)
         );
         router.post(
-    '/:id/complete',
-    sessionMiddleware(this.sessionService),
-    this.markAsCompleted.bind(this)
+        '/:id/complete',
+        sessionMiddleware(this.sessionService),
+        this.markAsCompleted.bind(this)
 );
 
      return router;

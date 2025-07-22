@@ -5,6 +5,7 @@ const ChallengeSchema = new mongoose.Schema({
     description:     { type: String, required: true },
     objectives:      [{ type: String, required: true }],
     duration:        { type: Number, required: true },
+    difficulty:      [{ type: String }],
     exerciseTypeIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ExerciseType' }],
     gymRoomId:       { type: mongoose.Schema.Types.ObjectId, ref: 'GymRoom' },
     creatorId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
