@@ -3,6 +3,7 @@ import Reward from "../services/mongoose/schema/reward.schema";
 import { sessionMiddleware, isAdmin } from "../middlewares";
 import { SessionService } from "../services/mongoose";
 import User from "../services/mongoose/schema/user.schema"; 
+import Challenge from "../services/mongoose/schema/challenge.schema"; 
 
 export class RewardController {
   constructor(public readonly sessionService: SessionService) {}
@@ -64,6 +65,33 @@ async giveReward(req: Request, res: Response) {
       return res.status(404).json({ message: "Utilisateur ou récompense introuvable" });
     }
 
+    // ✅ Si challengeId est fourni : vérifier qu’il est terminé
+    if (challengeId) {
+      const challenge = await Challenge.findById(challengeId);
+      if (!challenge) {
+        return res.status(404).json({ message: "Challenge introuvable" });
+      }
+
+      const hasCompleted = challenge.completedBy.some(
+        (u: any) => u.toString() === userId
+      );
+
+      if (!hasCompleted) {
+        return res.status(403).json({ message: "Récompense refusée : l’utilisateur n’a pas terminé ce challenge." });
+      }
+
+    } else {
+      // ✅ Si challengeId NON fourni : vérifier que l’utilisateur a au moins un challenge terminé
+      const completed = await Challenge.findOne({
+        status: "completed",
+        completedBy: userId
+      });
+
+      if (!completed) {
+        return res.status(403).json({ message: "Récompense refusée : aucun challenge terminé trouvé pour cet utilisateur." });
+      }
+    }
+
     const alreadyReceived = user.rewards.some(r => r.toString() === rewardId);
     if (alreadyReceived) {
       return res.status(409).json({ message: "Récompense déjà attribuée" });
@@ -72,11 +100,13 @@ async giveReward(req: Request, res: Response) {
     user.rewards.push(rewardId);
     await user.save();
 
-    return res.status(200).json({ message: "Récompense attribuée avec succès", challengeId });
+    return res.status(200).json({ message: "Récompense attribuée avec succès", challengeId: challengeId ?? null });
   } catch (err) {
     return res.status(500).json({ message: "Erreur serveur lors de l’attribution", error: err });
   }
 }
+
+
 
   buildRouter(): Router {
     const router = Router();
