@@ -66,18 +66,20 @@ export class ChallengeController {
             res.status(500).json({message : "veuillez vous authentifier"});
         }
         if (user.role === UserRole.USER) {
-            if(req.body.creatorId !== user._id.toString()){
-                return res.status(403).json({ message: "Vous ne pouvez assigné un challenge à un autre user en tant qu'utilisateur." });
-            } else if (req.body.participantIds && req.body.participantIds.length > 0 ) {
+            if (req.body.participantIds && req.body.participantIds.length > 0 ) {
                 return res.status(403).json({ message: "Vous ne pouvez pas assigner un challenge à d'autres participants en tant qu'utilisateur." });
             } else if (req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) {
                 return res.status(403).json({ message: "Vous ne pouvez pas assigner des badges en tant qu'utilisateur." });
             } else if (req.body.gymRoomId) {
                 return res.status(403).json({ message: "Vous ne pouvez pas assigner une salle de sport en tant qu'utilisateur." });
             }
-            const challenge = new Challenge(req.body);
-            await challenge.save();
-            return res.status(201).json(challenge);   
+
+            if(!req.body.creatorId){
+                req.body.creatorId = user._id;
+                const challenge = new Challenge(req.body);
+                await challenge.save();
+                return res.status(201).json(challenge);  
+            } 
         } else if ( user.role === UserRole.ADMIN){
                 const challenge = new Challenge(req.body);
                 await challenge.save();
@@ -98,46 +100,46 @@ export class ChallengeController {
 
     async updateChallenge(req: Request, res: Response){
         try {
-        const { id } = req.params;
-        const challenge = await Challenge.findById(id);
-        if (!challenge) {
-        return res.status(404).json({ message: "Challenge non trouvé" });
-        }
-        const user = req.user!;
-        const creator = await User.findById(challenge.creatorId);
-        if(!creator){
-            return res.status(403).json({ message: "créateur inconnu." });
-        }
-        if ( user.role === UserRole.USER && creator._id.equals(user._id) ){
-            if(
-                (req.body.creatorId && req.body.creatorId !== user._id.toString()) ||
-                (req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) ||
-                (req.body.participantIds && req.body.participantIds.length > 0) ||
-                (req.body.gymRoomId)
-            ){
-                return res.status(403).json({message:"Autorisation requise pour modifier ce champs."});
+            const { id } = req.params;
+            const challenge = await Challenge.findById(id);
+            if (!challenge) {
+            return res.status(404).json({ message: "Challenge non trouvé" });
             }
-            const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
-            if (updated && updated.status === 'completed' && updated.creatorId) {
-                    await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+            const user = req.user!;
+            const creator = await User.findById(challenge.creatorId);
+            if(!creator){
+                return res.status(403).json({ message: "créateur inconnu." });
+            }
+            if ( user.role === UserRole.USER && creator._id.equals(user._id) ){
+                if(
+                    (req.body.creatorId && req.body.creatorId !== user._id.toString()) ||
+                    (req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) ||
+                    (req.body.participantIds && req.body.participantIds.length > 0) ||
+                    (req.body.gymRoomId)
+                ){
+                    return res.status(403).json({message:"Autorisation requise pour modifier ce champs."});
+                }
+                const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
+                if (updated && updated.status === 'completed' && updated.creatorId) {
+                        await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
 
-            await this.checkAndAwardBadges(updated.creatorId.toString());
-            }
-            return res.json(updated);
-        } else if (user.role === UserRole.ADMIN) {
-            const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
-            if (updated && updated.status === 'completed' && updated.creatorId) {
-                    await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+                await this.checkAndAwardBadges(updated.creatorId.toString());
+                }
+                return res.json(updated);
+            } else if (user.role === UserRole.ADMIN) {
+                const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
+                if (updated && updated.status === 'completed' && updated.creatorId) {
+                        await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
 
-            await this.checkAndAwardBadges(updated.creatorId.toString());
+                await this.checkAndAwardBadges(updated.creatorId.toString());
+                }
+                return res.json(updated);
+            } else {
+                return res.status(403).json({ message: "Vous n'etes pas autorisé à modifier ce challenge." });
             }
-            return res.json(updated);
-        } else {
-            return res.status(403).json({ message: "Vous n'etes pas autorisé à modifier ce challenge." });
+        } catch (err) {
+            return res.status(500).json({ message: "Erreur lors de la mise à jour du challenge." });
         }
-    } catch (err) {
-        return res.status(500).json({ message: "Erreur lors de la mise à jour du challenge." });
-    }
     };
 
     async deleteChallenge(req: Request, res: Response){
@@ -157,58 +159,6 @@ export class ChallengeController {
             return res.status(500).json({ message: "Erreur lors de la suppression du challenge." });
         }
     };
-async markAsCompleted(req: Request, res: Response) {
-    const challengeId = req.params.id;
-    const userId = req.user?._id;
-
-    if (!challengeId || !userId) {
-        return res.status(400).json({ message: "Challenge ID ou utilisateur non valide" });
-    }
-
-    const challenge = await Challenge.findById(challengeId);
-    if (!challenge) {
-        return res.status(404).json({ message: "Challenge non trouvé" });
-    }
-
-    // Vérifie si l'utilisateur est déjà dans completedBy
-if (challenge.completedBy.includes(new mongoose.Types.ObjectId(userId))) {
-        return res.status(409).json({ message: "Challenge déjà marqué comme terminé" });
-    }
-
-challenge.completedBy.push(new mongoose.Types.ObjectId(userId));
-challenge.status = 'completed'; 
-    await challenge.save();
-await this.checkAndAwardRewards(userId.toString());
-
-    return res.status(200).json({ message: "Challenge marqué comme terminé", challenge });
-}
-
-
-async checkAndAwardRewards(userId: string): Promise<void> {
-  const user = await User.findById(userId).populate("rewards");
-  if (!user) return;
-
-  const allRewards = await Reward.find();
-  const earnedRewardIds = user.rewards.map((r: any) => r._id.toString());
-
-  const completedCount = await Challenge.countDocuments({ creatorId: userId, status: "completed" });
-
-  for (const reward of allRewards) {
-    if (earnedRewardIds.includes(reward._id.toString())) continue;
-
-    const match = reward.condition.match(/^completed_challenges\s*>=\s*(\d+)$/);
-    if (match) {
-      const target = parseInt(match[1]);
-      if (completedCount >= target) {
-        user.rewards.push(reward._id);
-        console.log(`🎉 Récompense attribuée automatiquement : ${reward.title}`);
-      }
-    }
-  }
-
-  await user.save();
-}
-
 
     async filterChallengesByDuration(req: Request, res: Response) {
         try {
@@ -246,6 +196,110 @@ async checkAndAwardRewards(userId: string): Promise<void> {
         } catch (err) {
             return res.status(500).json({ message: "Erreur lors du filtrage par difficulté." });
         }
+    }
+
+    async inviteParticipants(req: Request, res: Response) {
+        const challengeId = req.params.id;
+        if(!challengeId){
+            return res.status(400).json({ message: "ID de challenge manquant." });
+        }
+        const participantIds = req.body.participantIds;
+        if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
+            return res.status(400).json({ message: "Liste des participants requise." });
+        }
+        const user = req.user!;
+        const challenge = await Challenge.findById(challengeId);
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge non trouvé." });
+        }
+        const creator = await User.findById(challenge.creatorId);
+        if (!creator) {
+            return res.status(404).json({ message: "Créateur du challenge non trouvé." });
+        }
+        if (user.role === UserRole.USER && ( creator._id.toString() !== user._id.toString() || ( challenge.participantIds.length > 0 && !challenge.participantIds.includes(new mongoose.Types.ObjectId(user._id))))) {
+            return res.status(403).json({ message: "Vous n'êtes pas autorisé à inviter des participants." });
+        }
+        const validObjectIds = participantIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+
+        if (validObjectIds.length === 0) {
+            return res.status(400).json({ message: "Aucun participantId n'est un ObjectId valide." });
+        }
+
+        const validParticipants = await User.find({ _id: { $in: validObjectIds } });
+
+        if (validParticipants.length === 0) {
+            return res.status(404).json({ message: "Aucun participant valide trouvé." });
+        }
+
+        let invitationsEnvoyees = 0;
+
+        for (const participant of validParticipants) {
+            const dejaInvite = participant.invitations?.some(inv => inv.challengeId.toString() === challengeId && inv.status === "pending");
+            if (dejaInvite) continue;
+
+            participant.invitations = participant.invitations || [];
+            participant.invitations.push({
+                challengeId,
+                status: "pending",
+                invitedAt: new Date()
+            });
+
+            await participant.save();
+            invitationsEnvoyees++;
+        }
+        return res.status(200).json({ message: `${invitationsEnvoyees} invitation(s) envoyée(s) !` });
+    }
+
+    async markAsCompleted(req: Request, res: Response) {
+        const challengeId = req.params.id;
+        const userId = req.user?._id;
+
+        if (!challengeId || !userId) {
+            return res.status(400).json({ message: "Challenge ID ou utilisateur non valide" });
+        }
+
+        const challenge = await Challenge.findById(challengeId);
+        if (!challenge) {
+            return res.status(404).json({ message: "Challenge non trouvé" });
+        }
+
+        // Vérifie si l'utilisateur est déjà dans completedBy
+        if (challenge.completedBy.includes(new mongoose.Types.ObjectId(userId))) {
+            return res.status(409).json({ message: "Challenge déjà marqué comme terminé" });
+        }
+
+        challenge.completedBy.push(new mongoose.Types.ObjectId(userId));
+        challenge.status = 'completed'; 
+            await challenge.save();
+        await this.checkAndAwardRewards(userId.toString());
+
+            return res.status(200).json({ message: "Challenge marqué comme terminé", challenge });
+    }
+
+
+    async checkAndAwardRewards(userId: string): Promise<void> {
+        const user = await User.findById(userId).populate("rewards");
+        if (!user) return;
+
+        const allRewards = await Reward.find();
+        const earnedRewardIds = user.rewards.map((r: any) => r._id.toString());
+
+        const completedCount = await Challenge.countDocuments({ creatorId: userId, status: "completed" });
+
+        for (const reward of allRewards) {
+            if (earnedRewardIds.includes(reward._id.toString())) continue;
+
+            const match = reward.condition.match(/^completed_challenges\s*>=\s*(\d+)$/);
+            if (match) {
+            const target = parseInt(match[1]);
+            if (completedCount >= target) {
+                user.rewards.push(reward._id);
+                console.log(`🎉 Récompense attribuée automatiquement : ${reward.title}`);
+            }
+            }
+        }
+
+        await user.save();
     }
 
     //  Vérifie les règles et ajoute les badges si nécessaire
@@ -305,7 +359,19 @@ async checkAndAwardRewards(userId: string): Promise<void> {
             this.filterChallengesByExerciseType.bind(this)
         );
 
-        router.get(
+         router.post(
+            '/complete/:id',
+            sessionMiddleware(this.sessionService),
+            this.markAsCompleted.bind(this)
+        );
+
+        router.patch(
+            '/invite/:id',
+            sessionMiddleware(this.sessionService),
+            this.inviteParticipants.bind(this)
+        );
+
+         router.get(
                 '/:id',
                 sessionMiddleware(this.sessionService),
                 this.getChallengesByCreatorId.bind(this)
@@ -328,12 +394,7 @@ async checkAndAwardRewards(userId: string): Promise<void> {
                 sessionMiddleware(this.sessionService),
                 this.deleteChallenge.bind(this)
         );
-        router.post(
-        '/:id/complete',
-        sessionMiddleware(this.sessionService),
-        this.markAsCompleted.bind(this)
-);
-
+       
      return router;
     }
 }
