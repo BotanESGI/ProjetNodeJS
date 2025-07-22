@@ -107,8 +107,26 @@
         <input type="text" id="new-reward-name" placeholder="Nom de la récompense">
         <input type="text" id="new-reward-desc" placeholder="Description">
         <input type="text" id="new-reward-rule" placeholder="Règle de la récompense">
+
     </div>
     <button id="create-reward-btn">Créer</button>
+</div>
+<!-- Attribution manuelle d'une récompense -->
+<div class="card">
+  <h2>Donner une récompense à un utilisateur</h2>
+  <div class="form-group">
+    <label for="give-reward-userId">ID de l'utilisateur</label>
+    <input type="text" id="give-reward-userId">
+  </div>
+  <div class="form-group">
+    <label for="give-reward-rewardId">ID de la récompense</label>
+    <input type="text" id="give-reward-rewardId">
+  </div>
+  <div class="form-group">
+    <label for="give-reward-challengeId">ID du challenge (optionnel)</label>
+    <input type="text" id="give-reward-challengeId">
+  </div>
+  <button id="give-reward-btn">Attribuer la récompense</button>
 </div>
 
 <!-- Salles CRUD -->
@@ -485,10 +503,15 @@ document.getElementById('create-reward-btn').addEventListener('click', async () 
     const name = document.getElementById('new-reward-name').value;
     const description = document.getElementById('new-reward-desc').value;
     const rule = document.getElementById('new-reward-rule').value;
-if (!name || !description || !rule) {
-  alert("Veuillez remplir tous les champs : Nom, Description, Règle.");
-  return;
-}
+    const userId = document.getElementById('new-reward-user-id')?.value;
+
+    if (!name || !description || !rule) {
+        alert("Veuillez remplir tous les champs : Nom, Description, Règle.");
+        return;
+    }
+
+    const body = { title: name, description, condition: rule };
+    if (userId) body.userId = userId;
 
     const res = await fetch(`${API_BASE}/rewards`, {
         method: 'POST',
@@ -496,11 +519,28 @@ if (!name || !description || !rule) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`
         },
-body: JSON.stringify({ title: name, description, condition: rule })
+        body: JSON.stringify(body)
     });
 
     await showApiAlert(res, 'Récompense créée', 'Erreur lors de la création de la récompense');
-        document.getElementById('get-rewards-btn').click(); 
+    document.getElementById('get-rewards-btn').click(); 
+});
+
+document.getElementById('give-reward-btn').addEventListener('click', async () => {
+  const userId = document.getElementById('give-reward-userId').value;
+  const rewardId = document.getElementById('give-reward-rewardId').value;
+  const challengeId = document.getElementById('give-reward-challengeId').value;
+
+  const response = await fetch(`${API_BASE}/admin/give-reward`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`
+    },
+    body: JSON.stringify({ userId, rewardId, challengeId })
+  });
+
+  await showApiAlert(response, "Récompense attribuée avec succès", "Échec de l’attribution");
 });
 
     // Salles

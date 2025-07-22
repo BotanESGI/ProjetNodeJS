@@ -53,6 +53,30 @@
         <pre id="user-data"></pre>
     </div>
 </div>
+<!-- Création de Challenge -->
+<div class="card">
+    <h2>Créer un Challenge</h2>
+    <div class="form-group">
+        <label for="title">Titre</label>
+        <input type="text" id="title">
+    </div>
+    <div class="form-group">
+        <label for="description">Description</label>
+        <input type="text" id="description">
+    </div>
+    <div class="form-group">
+        <label for="duration">Durée (en jours)</label>
+        <input type="number" id="duration">
+    </div>
+    <button id="create-challenge-btn">Créer le challenge</button>
+</div>
+
+<!-- Liste des challenges créés -->
+<div class="card">
+    <h2>Mes Challenges</h2>
+    <button id="load-challenges-btn">Afficher mes challenges</button>
+    <div id="challenge-list"></div>
+</div>
 
 <script>
     let authToken = '';
@@ -114,6 +138,57 @@
             alert(`Erreur: ${error.message}`);
         }
     });
+    // Créer un challenge
+document.getElementById('create-challenge-btn').addEventListener('click', async () => {
+    const title = document.getElementById('title').value;
+    const description = document.getElementById('description').value;
+    const duration = parseInt(document.getElementById('duration').value);
+
+    const response = await fetch(`${API_BASE}/challenges`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ title, description, duration })
+    });
+
+    await showApiAlert(response, 'Challenge créé avec succès !', "Erreur lors de la création.");
+});
+
+// Charger les challenges
+document.getElementById('load-challenges-btn').addEventListener('click', async () => {
+    const res = await fetch(`${API_BASE}/challenges/${authToken}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    const challenges = await res.json();
+
+    const listDiv = document.getElementById('challenge-list');
+    listDiv.innerHTML = '';
+
+    challenges.forEach(ch => {
+        const div = document.createElement('div');
+        div.classList.add('card');
+        div.innerHTML = `
+            <strong>${ch.title}</strong><br>
+            ${ch.description}<br>
+            Durée : ${ch.duration} jours<br>
+            Statut : ${ch.status}<br>
+            ${ch.status !== 'completed' ? `<button onclick="markCompleted('${ch._id}')">Marquer comme terminé</button>` : ''}
+        `;
+        listDiv.appendChild(div);
+    });
+});
+
+// Marquer comme terminé
+async function markCompleted(challengeId) {
+    const res = await fetch(`${API_BASE}/challenges/complete/${challengeId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    await showApiAlert(res, "Challenge terminé !", "Erreur lors de la mise à jour.");
+}
+
 </script>
 </body>
 </html>
