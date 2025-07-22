@@ -121,7 +121,7 @@ export class ChallengeController {
                 }
                 const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
                 if (updated && updated.status === 'completed' && updated.creatorId) {
-                        await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+                        //await this.checkAndAwardRewards(updated.creatorId.toString()); // 
 
                 await this.checkAndAwardBadges(updated.creatorId.toString());
                 }
@@ -129,7 +129,7 @@ export class ChallengeController {
             } else if (user.role === UserRole.ADMIN) {
                 const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
                 if (updated && updated.status === 'completed' && updated.creatorId) {
-                        await this.checkAndAwardRewards(updated.creatorId.toString()); // 👈 ICI
+                      //  await this.checkAndAwardRewards(updated.creatorId.toString()); // 
 
                 await this.checkAndAwardBadges(updated.creatorId.toString());
                 }
@@ -271,13 +271,13 @@ export class ChallengeController {
         challenge.completedBy.push(new mongoose.Types.ObjectId(userId));
         challenge.status = 'completed'; 
             await challenge.save();
-        await this.checkAndAwardRewards(userId.toString());
+       // await this.checkAndAwardRewards(userId.toString());//
 
             return res.status(200).json({ message: "Challenge marqué comme terminé", challenge });
     }
 
 
-    async checkAndAwardRewards(userId: string): Promise<void> {
+  /*  async checkAndAwardRewards(userId: string): Promise<void> {
         const user = await User.findById(userId).populate("rewards");
         if (!user) return;
 
@@ -294,13 +294,13 @@ export class ChallengeController {
             const target = parseInt(match[1]);
             if (completedCount >= target) {
                 user.rewards.push(reward._id);
-                console.log(`🎉 Récompense attribuée automatiquement : ${reward.title}`);
+                console.log(` Récompense attribuée automatiquement : ${reward.title}`);
             }
             }
         }
 
         await user.save();
-    }
+    }*/
 
     //  Vérifie les règles et ajoute les badges si nécessaire
     async checkAndAwardBadges(userId: string): Promise<void> {
