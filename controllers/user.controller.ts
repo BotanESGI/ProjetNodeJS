@@ -129,7 +129,23 @@ export class UserController {
         return res.status(200).json({ message: "Invitation acceptée.", challenge });
     }
     
-
+    async declineInvitation(req: Request, res: Response) {
+        const challengeId = req.params.id;
+        if(!req.user){
+            return res.status(401).json({ message: "Utilisateur non authentifié." });
+        }
+        const user = await User.findById(req.user._id);
+        if( !user) {
+            return res.status(404).json({ message: "Utilisateur non trouvé." });
+        }
+        const invitation = user?.invitations.find(inv => inv.challengeId.toString() === challengeId);
+        if (!invitation) {
+            return res.status(404).json({ message: "Vous n'etes pas invité à ce challenge." });
+        }
+        invitation.status = "declined";
+        await user?.save();
+        return res.status(200).json({ message: "Invitation déclinée." });
+    }
 
     buildRouter(): Router {
         const router = Router();
@@ -150,6 +166,12 @@ export class UserController {
             sessionMiddleware(this.sessionService),
             this.acceptInvitation.bind(this)
         );
+
+        router.patch(
+            'invitations/decline/:id',
+            sessionMiddleware(this.sessionService),
+            this.declineInvitation.bind(this)
+        );  
 
         router.patch(['/disable', '/'],
             sessionMiddleware(this.sessionService),
