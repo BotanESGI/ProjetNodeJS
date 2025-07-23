@@ -3,7 +3,8 @@ import Reward from "../services/mongoose/schema/reward.schema";
 import { sessionMiddleware, isAdmin } from "../middlewares";
 import { SessionService } from "../services/mongoose";
 import User from "../services/mongoose/schema/user.schema"; 
-import Challenge from "../services/mongoose/schema/challenge.schema"; 
+import Challenge from "../services/mongoose/schema/challenge.schema";
+import mongoose from "mongoose";
 
 export class RewardController {
   constructor(public readonly sessionService: SessionService) {}
@@ -61,6 +62,10 @@ async giveReward(req: Request, res: Response) {
 
   if (!userId || !rewardId) {
     return res.status(400).json({ message: "Champs requis : userId et rewardId" });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(rewardId) || (challengeId && !mongoose.Types.ObjectId.isValid(challengeId))) {
+    return res.status(400).json({ message: "Un ou plusieurs identifiants sont invalides (doivent être des ObjectId MongoDB)." });
   }
 
   try {
