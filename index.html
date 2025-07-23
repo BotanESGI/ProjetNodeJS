@@ -139,18 +139,27 @@
     <div class="form-group">
         <input type="text" id="new-room-name" placeholder="Nom de la salle">
         <input type="text" id="new-room-location" placeholder="Emplacement">
-        <input type="text" id="new-room-owner" placeholder="ID propriétaire">
-        <input type="text" id="new-room-contact" placeholder="Contact">
+        <input type="text" id="new-room-owner" type="number" placeholder="ID propriétaire">
+        <input type="text" id="new-room-contact" type="number" placeholder="Contact">
         <input type="text" id="new-room-address" placeholder="Adresse">
-        <input type="number" id="new-room-capacity" placeholder="Capacité">
+        <input type="number" id="new-room-capacity" type="number" placeholder="Capacité">
+        <input type="text" id="new-room-equipments" placeholder="Équipements (séparés par des virgules)">
     </div>
     <button id="create-room-btn">Créer</button>
     <h3>Mettre à jour une salle</h3>
     <div class="form-group">
-        <input type="text" id="update-room-id" placeholder="ID salle">
-        <input type="text" id="update-room-name" placeholder="Nouveau nom">
+        <input type="text" id="update-room-id" placeholder="ID salle à modifier">
+        <input type="text" id="update-room-name" placeholder="Nom (optionnel)">
+        <input type="text" id="update-room-capacity" placeholder="Capacité (nombre)">
+        <input type="text" id="update-room-equipments" placeholder="Équipements (séparés par des virgules)">
+        <input type="text" id="update-room-description" placeholder="Description">
+        <input type="text" id="update-room-address" placeholder="Adresse">
+        <input type="text" id="update-room-contact" placeholder="Contact (nombre)">
+        <input type="text" id="update-room-exercise-types" placeholder="Types d'exercices (séparés par des virgules)">
+        <input type="text" id="update-room-difficulty-levels" placeholder="Niveaux de difficulté (séparés par des virgules)">
     </div>
-    <button id="update-room-btn">Mettre à jour</button>
+<button id="update-room-btn">Mettre à jour</button>
+
     <h3>Supprimer une salle</h3>
     <div class="form-group">
         <input type="text" id="delete-room-id" placeholder="ID salle">
@@ -555,6 +564,7 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
 
             div.innerHTML = `
             <h3>${room.name} <small style="font-weight: normal; color: #666;">(ID: ${room._id})</small></h3>
+            <p><strong>Owner Id:</strong> ${room.ownerId}</p>
             <p><strong>Description:</strong> ${room.description}</p>
             <p><strong>Adresse:</strong> ${room.address}</p>
             <p><strong>Contact:</strong> ${room.contact}</p>
@@ -572,12 +582,24 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
     });
 
     document.getElementById('create-room-btn').addEventListener('click', async () => {
-    const name = document.getElementById('new-room-name').value;
-    const location = document.getElementById('new-room-location').value;
-    const ownerId = document.getElementById('new-room-owner').value;
-    const contact = document.getElementById('new-room-contact').value;
-    const address = document.getElementById('new-room-address').value;
-    const capacity = document.getElementById('new-room-capacity').value;
+    const nameInput = document.getElementById('new-room-name');
+    const locationInput = document.getElementById('new-room-location');
+    const ownerIdInput = document.getElementById('new-room-owner');
+    const contactInput = document.getElementById('new-room-contact');
+    const addressInput = document.getElementById('new-room-address');
+    const capacityInput = document.getElementById('new-room-capacity');
+    const equipmentsInput = document.getElementById('new-room-equipments');
+
+    const name = nameInput.value.trim();
+    const location = locationInput.value.trim();
+    const ownerId = ownerIdInput.value.trim();
+    const contact = contactInput.value.trim();
+    const address = addressInput.value.trim();
+    const capacity = capacityInput.value.trim();
+    const equipments = equipmentsInput ? equipmentsInput.value.trim().split(',').map(e => e.trim()) : [];
+
+    const allInputs = [nameInput, locationInput, ownerIdInput, contactInput, addressInput, capacityInput,equipmentsInput];
+    allInputs.forEach(input => input.classList.remove('input-error'));
 
     try {
         const res = await fetch(`${API_BASE}/gym-rooms`, {
@@ -586,42 +608,154 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${authToken}`
             },
-            body: JSON.stringify({ name, location, ownerId, contact, address, capacity })
+            body: JSON.stringify({ name, location, ownerId, contact, address, capacity, equipments })
+        });
+
+        const result = await res.json();
+
+        if (isNaN(ownerId) || isNaN(contact) || isNaN(capacity)) {
+        alert("Les champs 'ID propriétaire', 'Contact' et 'Capacité' doivent être des nombres.");
+        return;
+    }
+
+        if (!res.ok) {
+            if (res.status === 400 && result.missingFields) {
+                alert("Veuillez remplir les champs requis : " + result.missingFields.join(", "));
+
+                result.missingFields.forEach(field => {
+                    const fieldInput = document.getElementById(`new-room-${field}`);
+                    if (fieldInput) {
+                        fieldInput.classList.add('input-error');
+                    }
+                });
+            } else if (res.status === 403) {
+                alert("Accès refusé : seuls les administrateurs peuvent créer une salle.");
+            } else {
+                alert(`Erreur : ${result.message || "Échec de la création de la salle."}`);
+            }
+            return;
+        }
+
+        alert("Salle créée avec succès !");
+
+        nameInput.value = '';
+        locationInput.value = '';
+        ownerIdInput.value = '';
+        contactInput.value = '';
+        addressInput.value = '';
+        capacityInput.value = '';
+        equipmentsInput.value = '';
+    } catch (error) {
+        console.error("Erreur réseau :", error);
+        alert("Une erreur réseau est survenue. Veuillez réessayer.");
+    }
+});
+
+   document.getElementById('update-room-btn').addEventListener('click', async () => {
+    const id = document.getElementById('update-room-id').value.trim();
+    if (!id) {
+        alert("Veuillez entrer un ID de salle valide.");
+        return;
+    }
+
+    const name = document.getElementById('update-room-name').value.trim();
+    const capacity = document.getElementById('update-room-capacity').value.trim();
+    const equipments = document.getElementById('update-room-equipments').value.trim();
+    const description = document.getElementById('update-room-description').value.trim();
+    const address = document.getElementById('update-room-address').value.trim();
+    const contact = document.getElementById('update-room-contact').value.trim();
+    const exerciseTypes = document.getElementById('update-room-exercise-types').value.trim();
+    const difficultyLevels = document.getElementById('update-room-difficulty-levels').value.trim();
+
+    const updateData = {};
+
+    if (name) updateData.name = name;
+    if (capacity) {
+        if (isNaN(capacity)) {
+            alert("Capacité doit être un nombre.");
+            return;
+        }
+        updateData.capacity = Number(capacity);
+    }
+    if (equipments) updateData.equipments = equipments.split(',').map(e => e.trim()).filter(e => e);
+    if (description) updateData.description = description;
+    if (address) updateData.address = address;
+    if (contact) {
+        if (isNaN(contact)) {
+            alert("Contact doit être un nombre.");
+            return;
+        }
+        updateData.contact = contact;
+    }
+    if (exerciseTypes) updateData.exerciseTypes = exerciseTypes.split(',').map(e => e.trim()).filter(e => e);
+    if (difficultyLevels) updateData.difficultyLevels = difficultyLevels.split(',').map(e => e.trim()).filter(e => e);
+    updateData.approved = approved;
+
+    if (Object.keys(updateData).length === 1 && updateData.approved === false) {
+        alert("Veuillez remplir au moins un champ à modifier.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(updateData)
         });
 
         const result = await res.json();
 
         if (!res.ok) {
-            if (res.status === 403) {
-                alert(" Accès refusé : seuls les administrateurs peuvent créer une salle.");
+            alert(`Erreur lors de la mise à jour : ${result.message || res.statusText}`);
+            return;
+        }
+
+        alert("Salle mise à jour avec succès !");
+    } catch (err) {
+        console.error(err);
+        alert("Une erreur est survenue lors de la mise à jour.");
+    }
+});
+
+    document.getElementById('delete-room-btn').addEventListener('click', async () => {
+    const id = document.getElementById('delete-room-id').value;
+    if (!id) {
+        alert("Veuillez entrer un ID de salle valide.");
+        return;
+    }
+
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la salle avec l'ID ${id} ?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (!res.ok) {
+            if (res.status === 404) {
+                alert("Erreur : aucune salle trouvée avec cet ID.");
             } else {
-                alert(` Erreur : ${result.message || "Échec de la création de la salle."}`);
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Erreur : ${errorData.message || 'aucune salle trouvée avec cet ID.'}`);
             }
             return;
         }
 
-        alert(" Salle créée avec succès !");
-    } catch (error) {
-        console.error("Erreur réseau :", error);
-        alert(" Une erreur réseau est survenue. Veuillez réessayer.");
+        alert("Salle supprimée avec succès !");
+    } catch (err) {
+        alert("Une erreur inattendue est survenue.");
+        console.error(err);
     }
 });
 
-    document.getElementById('update-room-btn').addEventListener('click', async () => {
-        const id = document.getElementById('update-room-id').value;
-        const name = document.getElementById('update-room-name').value;
-        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
-        await showApiAlert(res, 'Salle mise à jour', 'Erreur lors de la mise à jour');
-    });
-    document.getElementById('delete-room-btn').addEventListener('click', async () => {
-        const id = document.getElementById('delete-room-id').value;
-        const res = await fetch(`${API_BASE}/gym-rooms/${id}`, { method: 'DELETE' });
-        await showApiAlert(res, 'Salle supprimée', 'Erreur lors de la suppression');
-    });
 
     // Challenges
     document.getElementById('get-challenges-btn').addEventListener('click', async () => {
