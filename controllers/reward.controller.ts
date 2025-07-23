@@ -9,38 +9,44 @@ export class RewardController {
   constructor(public readonly sessionService: SessionService) {}
 
   async createReward(req: Request, res: Response) {
-  const { title, description, condition, iconUrl, userId } = req.body;
+    const { title, description, condition, iconUrl, userId } = req.body;
 
-  if (!title || !description) {
-    return res.status(400).json({ message: "Champs requis : title et description" });
-  }
-
-  try {
-    const existing = await Reward.findOne({ title });
-    if (existing) {
-      return res.status(409).json({ message: "Récompense déjà existante." });
+    if (!title) {
+      return res.status(400).json({ message: "Le champ 'title' est obligatoire." });
+    }
+    if (!description) {
+      return res.status(400).json({ message: "Le champ 'description' est obligatoire." });
+    }
+    if (!condition) {
+      return res.status(400).json({ message: "Le champ 'condition' (règle) est obligatoire." });
     }
 
-    const reward = await Reward.create({ title, description, condition, iconUrl });
-
-    if (userId) {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "Utilisateur non trouvé pour attribution" });
+    try {
+      const existing = await Reward.findOne({ title });
+      if (existing) {
+        return res.status(409).json({ message: "Récompense déjà existante." });
       }
 
-      const alreadyHas = user.rewards.includes(reward._id);
-      if (!alreadyHas) {
-        user.rewards.push(reward._id);
-        await user.save();
+      const reward = await Reward.create({ title, description, condition, iconUrl });
+
+      if (userId) {
+        const user = await User.findById(userId);
+        if (!user) {
+          return res.status(404).json({ message: "Utilisateur non trouvé pour attribution" });
+        }
+
+        const alreadyHas = user.rewards.includes(reward._id);
+        if (!alreadyHas) {
+          user.rewards.push(reward._id);
+          await user.save();
+        }
       }
+
+      return res.status(201).json({ message: "Récompense créée avec succès", reward });
+    } catch (err) {
+      return res.status(500).json({ message: "Erreur lors de la création de la récompense." });
     }
-
-    return res.status(201).json({ message: "Récompense créée avec succès", reward });
-  } catch (err) {
-    return res.status(500).json({ message: "Erreur serveur lors de la création de la récompense." });
   }
-}
 
   async getAllRewards(req: Request, res: Response) {
     try {
