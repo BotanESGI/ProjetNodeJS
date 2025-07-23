@@ -17,10 +17,25 @@ export class TrainingStatsController {
 
     async create(req: Request, res: Response) {
         const user = req.user!;
-        const data = { ...req.body, userId: user._id };
-        const stat = new TrainingStats(data);
-        await stat.save();
-        res.status(201).json(stat);
+        const { challengeId, duration, calories, notes } = req.body;
+        if (!challengeId) {
+            return res.status(400).json({ message: "Le champ 'challengeId' est obligatoire." });
+        }
+        if (!duration || isNaN(duration) || duration <= 0) {
+            return res.status(400).json({ message: "Le champ 'duration' est obligatoire et doit être un nombre positif." });
+        }
+        if (!calories || isNaN(calories) || calories <= 0) {
+            return res.status(400).json({ message: "Le champ 'calories' est obligatoire et doit être un nombre positif." });
+        }
+
+        try {
+            const data = { challengeId, duration, calories, notes, userId: user._id };
+            const stat = new TrainingStats(data);
+            await stat.save();
+            res.status(201).json(stat);
+        } catch (err) {
+            res.status(500).json({ message: "Erreur lors de l'enregistrement de la séance." });
+        }
     }
 
     async update(req: Request, res: Response) {
