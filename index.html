@@ -582,7 +582,11 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
 
     // Challenges
     document.getElementById('get-challenges-btn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/challenges`);
+        const res = await fetch(`${API_BASE}/challenges`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
         const challenges = await res.json();
         document.getElementById('challenges-list').textContent = JSON.stringify(challenges, null, 2);
     });
