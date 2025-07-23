@@ -54,11 +54,19 @@ export class GymRoomController {
     }
 
     async createGymRoom(req: Request, res: Response) {
+        const requiredFields = ['name', 'capacity', 'equipments', 'address', 'contact', 'ownerId'];
         const data = { ...req.body };
         const user = req.user!;
         if (user.role === UserRole.OWNER) {
             data.ownerId = user._id;
             data.approved = false;
+            const missingFields = requiredFields.filter(field => !data[field]);
+            if (missingFields.length > 0) {
+                return res.status(400).json({
+                    message: 'Champs manquants',
+                    missingFields
+                });
+            }
             let room = new GymRoom(data);
             await room.save();
             return res.status(201).json(room);
@@ -68,6 +76,13 @@ export class GymRoomController {
             }
             if (typeof data.approved === "undefined") {
                 data.approved = true;
+            }
+            const missingFields = requiredFields.filter(field => !data[field]);
+            if (missingFields.length > 0) {
+                return res.status(400).json({
+                    message: 'Champs manquants',
+                    missingFields
+                });
             }
             let room = new GymRoom(data);
                 await room.save();

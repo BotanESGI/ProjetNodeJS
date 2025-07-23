@@ -572,19 +572,41 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
     });
 
     document.getElementById('create-room-btn').addEventListener('click', async () => {
-        const name = document.getElementById('new-room-name').value;
-        const location = document.getElementById('new-room-location').value;
-        const ownerId = document.getElementById('new-room-owner').value;
-        const contact = document.getElementById('new-room-contact').value;
-        const address = document.getElementById('new-room-address').value;
-        const capacity = document.getElementById('new-room-capacity').value;
+    const name = document.getElementById('new-room-name').value;
+    const location = document.getElementById('new-room-location').value;
+    const ownerId = document.getElementById('new-room-owner').value;
+    const contact = document.getElementById('new-room-contact').value;
+    const address = document.getElementById('new-room-address').value;
+    const capacity = document.getElementById('new-room-capacity').value;
+
+    try {
         const res = await fetch(`${API_BASE}/gym-rooms`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
             body: JSON.stringify({ name, location, ownerId, contact, address, capacity })
         });
-        await showApiAlert(res, 'Salle créée', 'Erreur lors de la création');
-    });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+            if (res.status === 403) {
+                alert(" Accès refusé : seuls les administrateurs peuvent créer une salle.");
+            } else {
+                alert(` Erreur : ${result.message || "Échec de la création de la salle."}`);
+            }
+            return;
+        }
+
+        alert(" Salle créée avec succès !");
+    } catch (error) {
+        console.error("Erreur réseau :", error);
+        alert(" Une erreur réseau est survenue. Veuillez réessayer.");
+    }
+});
+
     document.getElementById('update-room-btn').addEventListener('click', async () => {
         const id = document.getElementById('update-room-id').value;
         const name = document.getElementById('update-room-name').value;
