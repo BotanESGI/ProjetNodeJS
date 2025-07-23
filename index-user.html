@@ -158,7 +158,7 @@ document.getElementById('create-challenge-btn').addEventListener('click', async 
 
 // Charger les challenges
 document.getElementById('load-challenges-btn').addEventListener('click', async () => {
-    const res = await fetch(`${API_BASE}/challenges/${authToken}`, {
+const res = await fetch(`${API_BASE}/challenges`, {
         headers: { 'Authorization': `Bearer ${authToken}` }
     });
     const challenges = await res.json();
