@@ -268,7 +268,7 @@ export class GymRoomController {
         if(room.approved) {
             return res.status(400).json({ message: "Cette salle est déjà approuvée." });
         }
-        if( room.approvalRequested === false) {
+        if( room.approvalRequested === false || room.approvalRequested === undefined) {
             return res.status(400).json({ message: "Aucune demande d'approbation en attente pour cette salle." });
         }
         room.approved = true;

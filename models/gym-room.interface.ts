@@ -12,4 +12,5 @@ export interface GymRoom extends Timestamps {
     ownerId: string;
     exerciseTypes: string[];
     difficultyLevels: string[];
+    approvalRequested: boolean;
 }
