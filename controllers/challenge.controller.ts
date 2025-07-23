@@ -87,9 +87,30 @@ export class ChallengeController {
         } else if (user.role === UserRole.OWNER) {  
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
                 if (hasApprovedRoom) {
-                    const challenge = new Challenge(req.body);
-                    await challenge.save();
-                   return res.status(201).json(challenge);
+                    const { title, description, duration, gymRoomId } = req.body;
+
+if (!gymRoomId || !mongoose.Types.ObjectId.isValid(gymRoomId)) {
+    return res.status(400).json({ message: "ID de salle invalide ou manquant." });
+}
+
+// Vérifie si la salle appartient bien à ce propriétaire
+const gymRoom = await GymRoom.findOne({ _id: gymRoomId, ownerId: user._id, approved: true });
+if (!gymRoom) {
+    return res.status(403).json({ message: "Salle non trouvée ou non approuvée pour ce propriétaire." });
+}
+
+const challenge = new Challenge({
+    title,
+    description,
+    duration,
+    gymRoom: gymRoomId,
+    owner: user._id,
+    creatorId: user._id
+});
+
+await challenge.save();
+return res.status(201).json(challenge);
+
                 } 
                 else {
                     return res.status(404).json({ message: "Accès refusé : vous n'avez pas le droit pour le moment de créer des challenges." });
