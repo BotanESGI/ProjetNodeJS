@@ -540,10 +540,37 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
 
     // Salles
     document.getElementById('get-rooms-btn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/gym-rooms`);
+        const res = await fetch(`${API_BASE}/gym-rooms`,{
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
         const rooms = await res.json();
-        document.getElementById('rooms-list').textContent = JSON.stringify(rooms, null, 2);
+        const container = document.getElementById('rooms-list')
+        container.innerHTML = ''
+        rooms.forEach(room => {
+            const created = new Date(room.createdAt).toLocaleString('fr-FR')
+            const updated = new Date(room.updatedAt).toLocaleString('fr-FR')
+            const div = document.createElement('div')
+   
+            div.classList.add('room-card')
+
+            div.innerHTML = `
+            <h3>${room.name} <small style="font-weight: normal; color: #666;">(ID: ${room._id})</small></h3>
+            <p><strong>Description:</strong> ${room.description}</p>
+            <p><strong>Adresse:</strong> ${room.address}</p>
+            <p><strong>Contact:</strong> ${room.contact}</p>
+            <p><strong>Capacité:</strong> ${room.capacity}</p>
+            <p><strong>Équipements:</strong> ${room.equipments.join(', ')}</p>
+            <p><strong>Niveaux:</strong> ${room.difficultyLevels.join(', ')}</p>
+            <p><strong>Approuvée ?</strong> ${room.approved ? 'Oui' : 'Non'}</p>
+            <p><strong>Demande d’approbation envoyée ?</strong> ${room.approvalRequested ? 'Oui' : 'Non'}</p>
+            <p><strong>Créée le :</strong> ${created}</p>
+            <p><strong>Dernière modification :</strong> ${updated}</p>
+            
+            `
+            container.appendChild(div)
+        })
     });
+
     document.getElementById('create-room-btn').addEventListener('click', async () => {
         const name = document.getElementById('new-room-name').value;
         const location = document.getElementById('new-room-location').value;
@@ -707,4 +734,22 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
     });
 </script>
 </body>
+<style>
+  .room-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #f9f9f9;
+  }
+
+  .room-card h3 {
+    margin-top: 0;
+    color: #333;
+  }
+
+  .room-card p {
+    margin: 4px 0;
+  }
+</style>
 </html>
