@@ -53,9 +53,17 @@
         <pre id="user-data"></pre>
     </div>
 </div>
+
+<!-- Liste des challenges créés -->
+<div class="card">
+    <h2>Mes défis</h2>
+    <button id="load-challenges-btn">Afficher mes défis</button>
+    <div id="challenge-list"></div>
+</div>
+
 <!-- Création de Challenge -->
 <div class="card">
-    <h2>Créer un Challenge</h2>
+    <h2>Créer un défis</h2>
     <div class="form-group">
         <label for="title">Titre</label>
         <input type="text" id="title">
@@ -68,14 +76,37 @@
         <label for="duration">Durée (en jours)</label>
         <input type="number" id="duration">
     </div>
-    <button id="create-challenge-btn">Créer le challenge</button>
+    <button id="create-challenge-btn">Créer le défis</button>
 </div>
 
-<!-- Liste des challenges créés -->
 <div class="card">
-    <h2>Mes Challenges</h2>
-    <button id="load-challenges-btn">Afficher mes challenges</button>
-    <div id="challenge-list"></div>
+    <h2>Mes séances enregistrées</h2>
+    <button id="load-stats-btn">Afficher mes séances</button>
+    <div id="stats-list"></div>
+</div>
+
+<!-- Suivi d'entraînement -->
+<div class="card">
+    <h2>Enregistrer une séance d'entraînement</h2>
+    <div class="form-group">
+        <label for="challengeId">Défis</label>
+        <select id="challengeId">
+            <option value="">-- Sélectionner un défis --</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="durationStat">Durée (minutes)</label>
+        <input type="number" id="durationStat">
+    </div>
+    <div class="form-group">
+        <label for="calories">Calories brûlées</label>
+        <input type="number" id="calories">
+    </div>
+    <div class="form-group">
+        <label for="notes">Notes</label>
+        <input type="text" id="notes">
+    </div>
+    <button id="save-training-btn">Enregistrer la séance</button>
 </div>
 
 <script>
@@ -116,6 +147,7 @@
             document.getElementById('token-value').textContent = authToken;
             document.getElementById('token-display').style.display = 'block';
             alert('Connexion réussie!');
+            await populateChallengeDropdown();
         } catch (error) {
             alert(`Erreur de connexion: ${error.message}`);
         }
@@ -154,6 +186,7 @@ document.getElementById('create-challenge-btn').addEventListener('click', async 
     });
 
     await showApiAlert(response, 'Challenge créé avec succès !', "Erreur lors de la création.");
+    await populateChallengeDropdown();
 });
 
 // Charger les challenges
@@ -188,6 +221,69 @@ async function markCompleted(challengeId) {
     });
     await showApiAlert(res, "Challenge terminé !", "Erreur lors de la mise à jour.");
 }
+
+    async function populateChallengeDropdown() {
+        if (!authToken) return;
+        const res = await fetch(`${API_BASE}/challenges`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!res.ok) return;
+        const challenges = await res.json();
+        const select = document.getElementById('challengeId');
+        select.innerHTML = '<option value="">-- Sélectionner un challenge --</option>';
+        challenges.forEach(ch => {
+            const opt = document.createElement('option');
+            opt.value = ch._id;
+            opt.textContent = `${ch.title} (${ch._id})`;
+            select.appendChild(opt);
+        });
+    }
+
+    document.getElementById('save-training-btn').addEventListener('click', async () => {
+        if (!authToken) {
+            alert("Veuillez vous connecter pour enregistrer une séance.");
+            return;
+        }
+        const challengeId = document.getElementById('challengeId').value;
+        const duration = parseInt(document.getElementById('durationStat').value);
+        const calories = parseInt(document.getElementById('calories').value);
+        const notes = document.getElementById('notes').value;
+
+        const res = await fetch(`${API_BASE}/training-stats`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ challengeId, duration, calories, notes })
+        });
+        await showApiAlert(res, "Séance enregistrée !", "Erreur lors de l'enregistrement.");
+    });
+
+    document.getElementById('load-stats-btn').addEventListener('click', async () => {
+        if (!authToken) {
+            alert("Veuillez vous connecter pour accéder à vos séances.");
+            return;
+        }
+        const res = await fetch(`${API_BASE}/training-stats`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const stats = await res.json();
+        const listDiv = document.getElementById('stats-list');
+        listDiv.innerHTML = '';
+        stats.forEach(stat => {
+            const div = document.createElement('div');
+            div.classList.add('card');
+            div.innerHTML = `
+            Challenge: ${stat.challengeId}<br>
+            Durée: ${stat.duration} min<br>
+            Calories: ${stat.calories}<br>
+            Notes: ${stat.notes || ''}<br>
+            Date: ${new Date(stat.date).toLocaleString()}
+        `;
+            listDiv.appendChild(div);
+        });
+    });
 
 </script>
 </body>

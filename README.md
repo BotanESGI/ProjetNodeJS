@@ -6,7 +6,6 @@ npm install
 docker-compose up -d
 npm run build
 npm run start
-npx http-server -p 8080 .
 http://localhost:8080/index.html
 http://localhost:8080/index-user.html
 http://localhost:8080/index-owner.html
@@ -24,7 +23,7 @@ Gestion des Types d'Exercices : ✅
 Ajout, modification et suppression des types d'exercices disponibles. Chaque type d'exercice peut être défini
 avec un nom, une description et des informations sur les muscles ciblés.
 
-Création de Badges et Récompenses :
+Création de Badges et Récompenses : ✅
 Possibilité pour l'administrateur de créer des badges et des récompenses virtuelles à attribuer aux
 utilisateurs en fonction de leurs accomplissements dans les défis. Des badges devront être ajouté
 dynamiquement au système depuis une interface en utilisant des règles.
@@ -58,7 +57,7 @@ par d'autres utilisateurs. Ils peuvent filtrer les défis en fonction de la diff
 durée. ✅
 
 Suivi de l'Entraînement : Les utilisateurs peuvent suivre leur progression dans les défis enregistrant leurs
-séances d'entraînement, le nombre de calories brûlées, et d'autres statistiques pertinentes.
+séances d'entraînement, le nombre de calories brûlées, et d'autres statistiques pertinentes. ✅
 
 Défis Sociaux : Les membres peuvent inviter leurs amis et leur réseau à rejoindre des défis collaboratifs. Ils
 peuvent également défier d'autres utilisateurs à rejoindre et à compléter les défis ensemble. ✅
