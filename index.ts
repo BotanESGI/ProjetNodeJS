@@ -51,7 +51,7 @@ async function startAPI() {
 
     const authController = new AuthController(userService, sessionService);
     app.use('/auth', authController.buildRouter.bind(authController)());
- app.post('/admin/give-reward', (req, res) =>
+ app.use('/admin/give-reward', (req, res) =>
         rewardController.giveReward(req, res)
     );
     app.listen(process.env.PORT, () => console.log(`API listening on port ${process.env.PORT}...`));
