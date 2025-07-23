@@ -505,12 +505,6 @@ document.getElementById('create-reward-btn').addEventListener('click', async () 
     const description = document.getElementById('new-reward-desc').value;
     const rule = document.getElementById('new-reward-rule').value;
     const userId = document.getElementById('new-reward-user-id')?.value;
-
-    if (!name || !description || !rule) {
-        alert("Veuillez remplir tous les champs : Nom, Description, Règle.");
-        return;
-    }
-
     const body = { title: name, description, condition: rule };
     if (userId) body.userId = userId;
 
