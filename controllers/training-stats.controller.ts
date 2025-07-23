@@ -1,23 +1,70 @@
-import TrainingStats from '../models/training-stats.schema';
-import { Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
+import TrainingStats from '../services/mongoose/schema/training-stats.schema';
+import { sessionMiddleware } from '../middlewares';
+import { SessionService } from '../services/mongoose';
 
-export const getAllTrainingStats = async (req: Request, res: Response) => {
-    const stats = await TrainingStats.find();
-    res.json(stats);
-};
+export class TrainingStatsController {
+    constructor(public readonly sessionService: SessionService) {}
 
-export const createTrainingStats = async (req: Request, res: Response) => {
-    const stats = new TrainingStats(req.body);
-    await stats.save();
-    res.status(201).json(stats);
-};
+    async getAll(req: Request, res: Response) {
+        const user = req.user!;
+        const { challengeId } = req.query;
+        const filter: any = { userId: user._id };
+        if (challengeId) filter.challengeId = challengeId;
+        const stats = await TrainingStats.find(filter);
+        res.json(stats);
+    }
 
-export const updateTrainingStats = async (req: Request, res: Response) => {
-    const stats = await TrainingStats.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(stats);
-};
+    async create(req: Request, res: Response) {
+        const user = req.user!;
+        const data = { ...req.body, userId: user._id };
+        const stat = new TrainingStats(data);
+        await stat.save();
+        res.status(201).json(stat);
+    }
 
-export const deleteTrainingStats = async (req: Request, res: Response) => {
-    await TrainingStats.findByIdAndDelete(req.params.id);
-    res.status(204).end();
-};
+    async update(req: Request, res: Response) {
+        const user = req.user!;
+        const { id } = req.params;
+        const stat = await TrainingStats.findOneAndUpdate(
+            { _id: id, userId: user._id },
+            req.body,
+            { new: true }
+        );
+        if (!stat) return res.status(404).json({ message: "Statistique non trouvée" });
+        res.json(stat);
+    }
+
+    async delete(req: Request, res: Response) {
+        const user = req.user!;
+        const { id } = req.params;
+        const stat = await TrainingStats.findOneAndDelete({ _id: id, userId: user._id });
+        if (!stat) return res.status(404).json({ message: "Statistique non trouvée" });
+        res.status(204).end();
+    }
+
+    buildRouter(): Router {
+        const router = Router();
+        router.get(
+            '/',
+            sessionMiddleware(this.sessionService),
+            this.getAll.bind(this)
+        );
+        router.post(
+            '/',
+            sessionMiddleware(this.sessionService),
+            this.create.bind(this)
+        );
+        router.put(
+            '/:id',
+            sessionMiddleware(this.sessionService),
+            this.update.bind(this)
+        );
+        router.delete(
+            '/:id',
+            sessionMiddleware(this.sessionService),
+            this.delete.bind(this)
+        );
+        return router;
+    }
+}

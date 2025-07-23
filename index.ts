@@ -7,14 +7,13 @@ import { AuthController } from "./controllers/auth.controller";
 import { UserController } from "./controllers/user.controller";
 import { BadgeController} from "./controllers/badge.controller";
 import { RewardController } from "./controllers/reward.controller";
-
+import { TrainingStatsController } from './controllers/training-stats.controller';
 import { ExerciseController } from "./controllers/exercise-type.controller";
 
 // Importation des autres routes CRUD
 //import gymRoomRoutes from "./routes/gym-room.routes";
 //import challengeRoutes from "./routes/challenge.routes";
 import { ChallengeController} from "./controllers/challenge.controller";
-import trainingStatsRoutes from "./routes/training-stats.routes";
 import { GymRoomController } from "./controllers/gym-room.controller";
 
 config();
@@ -40,15 +39,15 @@ async function startAPI() {
     const badgeController = new BadgeController(sessionService);
     const badgeRouter = badgeController.buildRouter.bind(badgeController)();
     const challengeRouter = challengeController.buildRouter.bind(challengeController)();
+    const trainingStatsController = new TrainingStatsController(sessionService);
+
     app.use('/users', userRouter); 
     app.use('/challenges', challengeRouter);
-    app.use('/training-stats', trainingStatsRoutes);
     app.use('/gym-rooms', gymRoomRouter);
-    app.use('/training-stats', trainingStatsRoutes);
     app.use('/exercises', exerciseRouter);
     app.use('/badges', badgeRouter);
     app.use('/rewards', rewardRouter);
-
+    app.use('/training-stats', trainingStatsController.buildRouter());
 
     const authController = new AuthController(userService, sessionService);
     app.use('/auth', authController.buildRouter.bind(authController)());

@@ -123,7 +123,7 @@
     <input type="text" id="give-reward-rewardId">
   </div>
   <div class="form-group">
-    <label for="give-reward-challengeId">  ID du challenge (facultatif, mais l’utilisateur doit avoir terminé au moins un challenge)
+    <label for="give-reward-challengeId">  ID du défis (facultatif, mais l’utilisateur doit avoir terminé au moins un défis)
 </label>
     <input type="text" id="give-reward-challengeId">
   </div>
@@ -160,10 +160,10 @@
 
 <!-- Challenges CRUD -->
 <div class="card">
-    <h2>Challenges (CRUD)</h2>
-    <button id="get-challenges-btn">Lister tous les challenges</button>
+    <h2>Défis (CRUD)</h2>
+    <button id="get-challenges-btn">Lister tous les défis</button>
     <pre id="challenges-list"></pre>
-    <h3>Créer un challenge</h3>
+    <h3>Créer un défis</h3>
     <div class="form-group">
         <input type="text" id="new-challenge-title" placeholder="Titre">
         <input type="text" id="new-challenge-desc" placeholder="Description">
@@ -171,13 +171,13 @@
         <input type="number" id="new-challenge-duration" placeholder="Durée (en minutes)">
     </div>
     <button id="create-challenge-btn">Créer</button>
-    <h3>Mettre à jour un challenge</h3>
+    <h3>Mettre à jour un défis</h3>
     <div class="form-group">
         <input type="text" id="update-challenge-id" placeholder="ID challenge">
         <input type="text" id="update-challenge-title" placeholder="Nouveau titre">
     </div>
     <button id="update-challenge-btn">Mettre à jour</button>
-    <h3>Supprimer un challenge</h3>
+    <h3>Supprimer un défis</h3>
     <div class="form-group">
         <input type="text" id="delete-challenge-id" placeholder="ID challenge">
     </div>
@@ -606,12 +606,12 @@ document.getElementById('give-reward-btn').addEventListener('click', async () =>
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
         });
-        await showApiAlert(res, 'Challenge mis à jour', 'Erreur lors de la mise à jour');
+        await showApiAlert(res, 'Défis mis à jour', 'Erreur lors de la mise à jour');
     });
     document.getElementById('delete-challenge-btn').addEventListener('click', async () => {
         const id = document.getElementById('delete-challenge-id').value;
         const res = await fetch(`${API_BASE}/challenges/${id}`, { method: 'DELETE' });
-        await showApiAlert(res, 'Challenge supprimé', 'Erreur lors de la suppression');
+        await showApiAlert(res, 'Défis supprimé', 'Erreur lors de la suppression');
     });
 
     // Lister les exercices
