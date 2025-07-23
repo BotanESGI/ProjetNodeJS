@@ -30,30 +30,26 @@ export class GymRoomController {
     async getGymRoomByOwnerID(req: Request, res:Response){
         const user = req.user!;
         let rooms;
-        if(user.role === UserRole.OWNER) {
-            const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
-            if (hasApprovedRoom) {
-                rooms = await GymRoom.find({ownerId: req.params.id, approved:true});
-                if (!rooms.length) {
-                    return res.status(404).json({message :"ce propriétaire n'a encore aucune salle approuvée."});
-                }
-             return res.json(rooms);
-            } 
-            else {
-                return res.status(404).json({ message: "Accès refusé! Vous n'avez aucune salle approuvée." });
+        if(user.role === UserRole.ADMIN) {
+            rooms = await GymRoom.find({ ownerId: req.params.id, approved: true });
+            if(!rooms || rooms.length === 0) {
+                return res.status(404).json({ message: "Aucune salle trouvée pour cet owner." });
             }
-        } else if(user.role === UserRole.USER){
+            return res.json(rooms);
+        } else if (user.role === UserRole.OWNER && user._id.toString() === req.params.id) {
+            rooms = await GymRoom.find({ ownerId: user._id});
+            if(!rooms || rooms.length === 0) {
+                return res.status(404).json({ message: "Vous n'avez encore aucune salle à votre nom." });
+            }
+            return res.json(rooms);
+        } else if (user.role === UserRole.USER) {
             rooms = await GymRoom.find({ownerId: req.params.id, approved: true});
-            if(!rooms.length){
-                return res.status(404).json({message :"ce propriétaire n'a encore aucune salle approuvée."}); 
+            if(!rooms || rooms.length === 0) {
+                return res.status(404).json({ message: "Aucune salle trouvée pour cet owner." });
             }
             return res.json(rooms);
-        } else if(user.role === UserRole.ADMIN){
-            rooms = await GymRoom.find({ownerId: req.params.id});
-            if (!rooms.length){
-                return res.status(404).json({message :"ce propriétaire n'a encore aucune salle ajoutée à son nom."});
-            }
-            return res.json(rooms);
+        } else {
+            return res.status(403).json({ message: "Accès refusé : Seuls les propriétaires ou administrateurs peuvent accéder aux salles." });
         }
     }
 
@@ -216,6 +212,75 @@ export class GymRoomController {
         }
     }
 
+    async requestGymApproval(req: Request, res: Response) {
+        const user = req.user!;
+        const gymRoomId = req.params.id;
+        if (!gymRoomId) {
+            return res.status(400).json({ message: "ID de salle invalide." });
+        }
+        const room = await GymRoom.findById(gymRoomId);
+        if (!room) {
+            return res.status(404).json({ message: "Salle introuvable." });
+        }
+        if (user.role === UserRole.OWNER && room.ownerId.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: "Accès refusé : Vous ne pouvez envoyer la demande que pour vos propres salles." });
+        }
+        if (room.approved) {
+            return res.status(400).json({ message: "Cette salle est déjà approuvée." });
+        }
+        room.approvalRequested = true;
+        await room.save();
+        return res.status(200).json({ message: "Demande d'approbation envoyée.", room });
+    }
+
+    async getAllGymApprovalRequests(req: Request, res: Response) {
+        const rooms = await GymRoom.find({ approved: false, approvalRequested: true });
+        if (!rooms) {
+            return res.status(404).json({ message: "Aucune demande d'approbation de salle trouvée." });
+        }
+        return res.json(rooms);
+    }
+
+    async approveGymRoomRequest(req: Request, res: Response) {
+        const gymRoomId = req.params.id;
+        if (!gymRoomId) {
+            return res.status(400).json({ message: "ID de salle invalide." });
+        }
+        const room = await GymRoom.findById(gymRoomId);
+        if (!room) {
+            return res.status(404).json({ message: "Salle introuvable." });
+        }
+        if(room.approved) {
+            return res.status(400).json({ message: "Cette salle est déjà approuvée." });
+        }
+        if( room.approvalRequested === false) {
+            return res.status(400).json({ message: "Aucune demande d'approbation en attente pour cette salle." });
+        }
+        room.approved = true;
+        room.approvalRequested = false;
+        await room.save();
+        return res.status(200).json({ message: "Salle approuvée avec succès.", room });
+    }
+
+    async disapproveGymRoomRequest(req: Request, res: Response) {
+        const gymRoomId = req.params.id;
+        if (!gymRoomId) {
+            return res.status(400).json({ message: "ID de salle invalide." });
+        }
+        const room = await GymRoom.findById(gymRoomId);
+        if (!room) {
+            return res.status(404).json({ message: "Salle introuvable." });
+        }
+        if (room.approved) {
+            return res.status(400).json({ message: "Cette salle est déjà approuvée." });
+        }
+        if (room.approvalRequested === false) {
+            return res.status(400).json({ message: "Aucune demande d'approbation en attente pour cette salle." });
+        }
+        room.approvalRequested = false;
+        await room.save();
+        return res.status(200).json({ message: "Demande d'approbation annulée.", room });
+    }
 
     buildRouter(): Router {
         const router = Router();
@@ -243,6 +308,34 @@ export class GymRoomController {
             isOwner, 
             this.getGymRoomByOwnerID.bind(this)
         );
+
+        router.get('/admin/request-approval',
+            sessionMiddleware(this.sessionService),
+            isAdmin,
+            this.getAllGymApprovalRequests.bind(this)
+        );
+
+        router.patch(
+            '/request-approval/:id',
+            sessionMiddleware(this.sessionService),
+            isOwner,
+            this.requestGymApproval.bind(this)
+        );
+
+        router.patch(
+        '/approve/:id',
+        sessionMiddleware(this.sessionService),
+        isAdmin,
+        this.approveGymRoom.bind(this)
+    );
+
+    router.patch(
+        '/disapprove/:id',
+        sessionMiddleware(this.sessionService),
+        isAdmin,
+        this.disapproveGymRoom.bind(this)
+    );
+
 
         router.post(
             '/',
