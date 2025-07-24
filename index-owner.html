@@ -53,6 +53,27 @@
         <pre id="user-data"></pre>
     </div>
 </div>
+<!-- Création de défi -->
+<div class="card">
+    <h2>Proposer un défi</h2>
+    <div class="form-group">
+        <label for="challenge-title">Titre :</label>
+        <input type="text" id="challenge-title" placeholder="Ex: Défi abdos express">
+    </div>
+    <div class="form-group">
+        <label for="challenge-desc">Description :</label>
+        <input type="text" id="challenge-desc" placeholder="Ex: Réaliser 50 abdos en 5 minutes">
+    </div>
+    <div class="form-group">
+        <label for="challenge-duration">Durée (en minutes) :</label>
+        <input type="number" id="challenge-duration" min="1">
+    </div>
+    <div class="form-group">
+        <label for="challenge-gymroom">ID de la salle (gymRoomId approuvé) :</label>
+        <input type="text" id="challenge-gymroom" placeholder="Ex: 66b...a9d">
+    </div>
+    <button id="create-challenge-btn">Créer le défi</button>
+</div>
 
 <script>
     let authToken = '';
@@ -114,6 +135,40 @@
             alert(`Erreur: ${error.message}`);
         }
     });
+
+    // ✅ CORRECTEMENT placé ici
+    document.getElementById('create-challenge-btn').addEventListener('click', async () => {
+        const title = document.getElementById('challenge-title').value;
+        const description = document.getElementById('challenge-desc').value;
+        const duration = parseInt(document.getElementById('challenge-duration').value);
+        const gymRoomId = document.getElementById('challenge-gymroom').value;
+
+        if (!title || !description || !duration || !gymRoomId) {
+            return alert("Tous les champs sont obligatoires.");
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/challenges`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ title, description, duration, gymRoomId })
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || 'Erreur lors de la création du défi.');
+            }
+
+            const created = await response.json();
+            alert(` Défi créé avec succès ! ID: ${created._id}`);
+        } catch (error) {
+            alert(`Erreur : ${error.message}`);
+        }
+    });
 </script>
+
 </body>
 </html>

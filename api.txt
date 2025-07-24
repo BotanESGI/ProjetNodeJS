@@ -1,0 +1,212 @@
+# Authentification
+POST /auth/login
+Description: Authentifie un utilisateur et retourne un token JWT.
+Body:
+{
+  "email": "tsnessgym2@yopmail.com",
+  "password": "tsnessgym"
+}
+
+GET /auth/me
+Description: Retourne les informations du profil de l'utilisateur connecté.
+Header: Authorization: Bearer {token}
+
+# Utilisateurs
+GET /users
+Description: Liste tous les utilisateurs.
+Header: Authorization: Bearer {token}
+
+PATCH /users/disable/{id}
+Description: Désactive un utilisateur.
+Header: Authorization: Bearer {token}
+
+DELETE /users/{id}
+Description: Supprime un utilisateur.
+Header: Authorization: Bearer {token}
+
+# Badges
+GET /badges
+Description: Liste tous les badges disponibles.
+Header: Authorization: Bearer {token}
+
+POST /badges
+Description: Crée un nouveau badge.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "name": "Nom du badge",
+  "description": "Description",
+  "rule": "Règle du badge"
+}
+
+PUT /badges/{id}
+Description: Met à jour un badge existant.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "name": "Nouveau nom",
+  "description": "Nouvelle description"
+}
+
+DELETE /badges/{id}
+Description: Supprime un badge.
+Header: Authorization: Bearer {token}
+
+# Récompenses
+GET /rewards
+Description: Liste toutes les récompenses.
+Header: Authorization: Bearer {token}
+
+POST /rewards
+Description: Crée une nouvelle récompense.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "title": "Nom de la récompense",
+  "description": "Description",
+  "condition": "Règle de la récompense"
+}
+
+POST /rewards/admin/give-reward
+Description: Attribue une récompense à un utilisateur (optionnellement liée à un défi).
+Header: Authorization: Bearer {token}
+Body:
+{
+  "userId": "ID utilisateur",
+  "rewardId": "ID récompense",
+  "challengeId": "ID défi (optionnel ou null)"
+}
+
+# Salles
+GET /gym-rooms
+Description: Liste toutes les salles de sport.
+
+POST /gym-rooms
+Description: Crée une nouvelle salle de sport.
+Body:
+{
+  "name": "Nom de la salle",
+  "location": "Emplacement",
+  "ownerId": "ID propriétaire",
+  "contact": "Contact",
+  "address": "Adresse",
+  "capacity": 50
+}
+
+PUT /gym-rooms/{id}
+Description: Met à jour le nom d'une salle.
+Body:
+{
+  "name": "Nouveau nom"
+}
+
+DELETE /gym-rooms/{id}
+Description: Supprime une salle.
+
+# Défis
+GET /challenges
+Description: Liste tous les défis.
+Header: Authorization: Bearer {token}
+
+POST /challenges
+Description: Crée un nouveau défi.
+Body admin:
+Body:
+{
+  "title": "Titre",
+  "description": "Description",
+  "creatorId": "ID créateur",
+  "duration": 60
+}
+Body utilisateur:
+{
+  "title": "Titre",
+  "description": "Description",
+  "duration": 7
+}
+Body owner:
+{
+  "title": "Titre",
+  "description": "Description",
+  "duration": 7,
+  "gymRoomId": "ID salle"
+}
+
+PUT /challenges/{id}
+Description: Met à jour le titre d'un défi.
+Body:
+{
+  "title": "Nouveau titre"
+}
+
+DELETE /challenges/{id}
+Description: Supprime un défi.
+
+# Exercices
+GET /exercises
+Description: Liste tous les types d'exercices.
+Header: Authorization: Bearer {token}
+
+POST /exercises
+Description: Crée un nouvel exercice.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "name": "Nom de l'exercice",
+  "description": "Description",
+  "muscles": ["muscle1", "muscle2"]
+}
+
+PUT /exercises/{id}
+Description: Met à jour un exercice existant.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "name": "Nouveau nom",
+  "description": "Nouvelle description",
+  "muscles": ["muscle1", "muscle2"]
+}
+
+DELETE /exercises/{id}
+Description: Supprime un exercice.
+Header: Authorization: Bearer {token}
+
+# Statistiques d'entraînement
+GET /training-stats
+Description: Liste toutes les statistiques d'entraînement.
+
+POST /training-stats
+Description: Crée une nouvelle statistique d'entraînement.
+Body:
+{
+  "userId": "ID utilisateur",
+  "challengeId": "ID challenge",
+  "progress": 80,
+  "totalCalories": 500
+}
+
+PUT /training-stats/{id}
+Description: Met à jour une statistique d'entraînement.
+Body:
+{
+  "progress": 90,
+  "totalCalories": 600
+}
+
+DELETE /training-stats/{id}
+Description: Supprime une statistique d'entraînement.
+
+POST /challenges/complete/{id}
+Description: Marque un défi comme terminé pour l'utilisateur connecté.
+Header: Authorization: Bearer {token}
+
+POST /training-stats
+Description: Enregistre une séance d'entraînement pour l'utilisateur.
+Header: Authorization: Bearer {token}
+Body:
+{
+  "challengeId": "ID du défi",
+  "duration": 60,
+  "calories": 500,
+  "notes": "Notes facultatives"
+}

@@ -40,6 +40,7 @@ async function startAPI() {
     const badgeRouter = badgeController.buildRouter.bind(badgeController)();
     const challengeRouter = challengeController.buildRouter.bind(challengeController)();
     const trainingStatsController = new TrainingStatsController(sessionService);
+    const authController = new AuthController(userService, sessionService);
 
     app.use('/users', userRouter); 
     app.use('/challenges', challengeRouter);
@@ -48,10 +49,7 @@ async function startAPI() {
     app.use('/badges', badgeRouter);
     app.use('/rewards', rewardRouter);
     app.use('/training-stats', trainingStatsController.buildRouter());
-
-    const authController = new AuthController(userService, sessionService);
     app.use('/auth', authController.buildRouter.bind(authController)());
-
     app.listen(process.env.PORT, () => console.log(`API listening on port ${process.env.PORT}...`));
 }
 
