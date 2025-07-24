@@ -54,6 +54,26 @@
     </div>
 </div>
 
+<!-- Salles CRUD -->
+<div class="card">
+    <h2>Salles (CRUD)</h2>
+    <button id="get-rooms-btn">Lister toutes les salles</button>
+    <pre id="rooms-list"></pre>
+    
+    <h2>Filtrer les salles</h2>
+    <div>
+    <label for="exercise-id">ID de l'exercice :</label>
+    <input type="text" id="exercise-id" placeholder="ex: 123abc" />
+    </div>
+    <div>
+    <label for="difficulty-level">Niveau de difficulté :</label>
+    <input type="text" id="difficulty-level" placeholder="ex: facile, moyen, difficile" />
+    </div>
+    <button id="filter-rooms-btn">Filtrer</button>
+    <div id="filtered-rooms-results"></div>
+</div>
+
+
 <!-- Liste des challenges créés -->
 <div class="card">
     <h2>Mes défis</h2>
@@ -170,6 +190,92 @@
             alert(`Erreur: ${error.message}`);
         }
     });
+
+    // Salles
+    document.getElementById('get-rooms-btn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/gym-rooms`,{
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const rooms = await res.json();
+        const container = document.getElementById('rooms-list')
+        container.innerHTML = ''
+        rooms.forEach(room => {
+            const created = new Date(room.createdAt).toLocaleString('fr-FR')
+            const updated = new Date(room.updatedAt).toLocaleString('fr-FR')
+            const div = document.createElement('div')
+   
+            div.classList.add('room-card')
+
+            div.innerHTML = `
+            <h3>${room.name} 
+            <p><strong>Description:</strong> ${room.description}</p>
+            <p><strong>Adresse:</strong> ${room.address}</p>
+            <p><strong>Contact:</strong> ${room.contact}</p>
+            <p><strong>Capacité:</strong> ${room.capacity}</p>
+            <p><strong>Équipements:</strong> ${room.equipments.join(', ')}</p>
+            <p><strong>Niveaux:</strong> ${room.difficultyLevels.join(', ')}</p>
+            <p><strong>Approuvée ?</strong> ${room.approved ? 'Oui' : 'Non'}</p>
+            <p><strong>Créée le :</strong> ${created}</p>
+            <p><strong>Dernière modification :</strong> ${updated}</p>
+            
+            `
+            container.appendChild(div)
+        })
+    });
+ document.getElementById('filter-rooms-btn').addEventListener('click', async () => {
+    const exerciseId = document.getElementById('exercise-id').value.trim();
+    const difficultyLevel = document.getElementById('difficulty-level').value.trim();
+    const container = document.getElementById('filtered-rooms-results');
+    container.innerHTML = '';
+
+    if (!exerciseId && !difficultyLevel) {
+      alert("Veuillez fournir au moins un critère de filtrage.");
+      return;
+    }
+
+    // Construire les paramètres query dynamiquement
+    const params = new URLSearchParams();
+    if (exerciseId) params.append('exerciseId', exerciseId);
+    if (difficultyLevel) params.append('difficultyLevel', difficultyLevel);
+
+    try {
+      const res = await fetch(`${API_BASE}/gym-rooms/filter?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        container.innerHTML = `<p style="color:red;">Erreur : ${err.message || 'Aucune salle trouvée.'}</p>`;
+        return;
+      }
+
+      const rooms = await res.json();
+
+      if (rooms.length === 0) {
+        container.innerHTML = `<p>Aucune salle trouvée.</p>`;
+        return;
+      }
+
+      container.innerHTML = rooms.map(room => `
+        <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px;">
+          <h3>${room.name}</h3>
+          <p><strong>Adresse:</strong> ${room.address}</p>
+          <p><strong>Capacité:</strong> ${room.capacity}</p>
+          <p><strong>Équipements:</strong> ${room.equipments.join(', ')}</p>
+          <p><strong>Niveaux de difficulté:</strong> ${room.difficultyLevels.join(', ')}</p>
+          <p><strong>Exercices:</strong> ${room.exerciseTypes.join(', ')}</p>
+          <p><strong>Approuvée:</strong> ${room.approved ? 'Oui' : 'Non'}</p>
+        </div>
+      `).join('');
+
+    } catch (error) {
+      container.innerHTML = `<p style="color:red;">Erreur réseau : ${error.message}</p>`;
+    }
+  });
+
+
     // Créer un challenge
 document.getElementById('create-challenge-btn').addEventListener('click', async () => {
     const title = document.getElementById('title').value;
@@ -289,4 +395,22 @@ async function markCompleted(challengeId) {
 
 </script>
 </body>
+<style>
+  .room-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    background-color: #f9f9f9;
+  }
+
+  .room-card h3 {
+    margin-top: 0;
+    color: #333;
+  }
+
+  .room-card p {
+    margin: 4px 0;
+  }
+</style>
 </html>
