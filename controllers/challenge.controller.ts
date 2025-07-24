@@ -62,55 +62,116 @@ export class ChallengeController {
 
    async createChallenge(req: Request, res: Response){
         const user = req.user!;
+        const requiredFields = ['title', 'description', 'objectives', 'duration'];
+
         if (!user){
             res.status(500).json({message : "veuillez vous authentifier"});
         }
         if (user.role === UserRole.USER) {
             if (req.body.participantIds && req.body.participantIds.length > 0 ) {
-                return res.status(403).json({ message: "Vous ne pouvez pas assigner un challenge à d'autres participants en tant qu'utilisateur." });
+                const exists = await User.exists({ _id: { $in: req.body.participantIds } });
+                if (!exists) {
+                    return res.status(404).json({ message: "Un ou plusieurs participants n'existent pas." });
+                }
             } else if (req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) {
                 return res.status(403).json({ message: "Vous ne pouvez pas assigner des badges en tant qu'utilisateur." });
             } else if (req.body.gymRoomId) {
-                return res.status(403).json({ message: "Vous ne pouvez pas assigner une salle de sport en tant qu'utilisateur." });
+                return res.status(403).json({ message: "Vous ne pouvez pas assigner une salle de sport à un challenge en tant qu'utilisateur." });
             }
 
-            if(!req.body.creatorId){
+            if(req.body.creatorId && req.body.creatorId !== user._id.toString()){
+                return res.status(403).json({ message: "Vous ne pouvez pas assigner un créateur différent de vous-même." });
+            }
                 req.body.creatorId = user._id;
+                const missingFields = requiredFields.filter(field => !req.body[field]);
+                if (missingFields.length > 0) {
+                    return res.status(400).json({ message: `Champs manquants : ${missingFields.join(', ')}` });
+                }
                 const challenge = new Challenge(req.body);
                 await challenge.save();
                 return res.status(201).json(challenge);  
-            } 
+            
         } else if ( user.role === UserRole.ADMIN){
+                const missingFields = requiredFields.filter(field => !req.body[field]);
+                if (missingFields.length > 0) {
+                    return res.status(400).json({ message: `Champs manquants : ${missingFields.join(', ')}` });
+                }
+                if (req.body.participantIds && req.body.participantIds.length > 0) {
+                    const exists = await User.exists({ _id: { $in: req.body.participantIds } });
+                    if (!exists) {
+                        return res.status(404).json({ message: "Un ou plusieurs participants n'existent pas." });
+                    }
+                }
+                if(req.body.creatorId && req.body.creatorId !== user._id.toString()){
+                    const creator = await User.findById(req.body.creatorId);
+                    if (!creator) {
+                        return res.status(404).json({ message: "Créateur du challenge non trouvé." });
+                    }
+                }
+                if(!req.body.creatorId){
+                    req.body.creatorId = user._id;
+                }
+                if(req.body.gymRoomId){
+                    const gymRoom = await GymRoom.findById(req.body.gymRoomId, { approved: true });
+                    if (!gymRoom) {
+                        return res.status(404).json({ message: "Salle de sport non trouvée." });
+                    }
+                }
+                if(req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) {
+                const badges = await Badge.find({ _id: { $in: req.body.badgeRewardIds } });
+                if (!badges || badges.length !== req.body.badgeRewardIds.length) {
+                    return res.status(404).json({ message: "Un ou plusieurs badges n'existent pas." });
+                }
+            }
                 const challenge = new Challenge(req.body);
                 await challenge.save();
                 return res.status(201).json(challenge);
+
         } else if (user.role === UserRole.OWNER) {  
             const hasApprovedRoom = await GymRoom.exists({ ownerId: user._id, approved: true });
                 if (hasApprovedRoom) {
-                    const { title, description, duration, gymRoomId } = req.body;
-
-if (!gymRoomId || !mongoose.Types.ObjectId.isValid(gymRoomId)) {
-    return res.status(400).json({ message: "ID de salle invalide ou manquant." });
-}
-
-// Vérifie si la salle appartient bien à ce propriétaire
-const gymRoom = await GymRoom.findOne({ _id: gymRoomId, ownerId: user._id, approved: true });
-if (!gymRoom) {
-    return res.status(403).json({ message: "Salle non trouvée ou non approuvée pour ce propriétaire." });
-}
-
-const challenge = new Challenge({
-    title,
-    description,
-    duration,
-    gymRoom: gymRoomId,
-    owner: user._id,
-    creatorId: user._id
-});
-
-await challenge.save();
-return res.status(201).json(challenge);
-
+                    const missingFields = requiredFields.filter(field => !req.body[field]);
+                    if (missingFields.length > 0) {
+                        return res.status(400).json({ message: `Champs manquants : ${missingFields.join(', ')}` });
+                    }
+                    if (req.body.participantIds && req.body.participantIds.length > 0) {
+                        const exists = await User.exists({ _id: { $in: req.body.participantIds } });
+                        if (!exists) {
+                            return res.status(404).json({ message: "Un ou plusieurs participants n'existent pas." });
+                        }
+                    }
+                    if(req.body.creatorId && req.body.creatorId !== user._id.toString()){
+                        const creator = await User.find(req.body.creatorId);
+                        if (!creator) {
+                            return res.status(404).json({ message: "Créateur du challenge non trouvé." });
+                        }
+                    }
+                    if(!req.body.creatorId){
+                        req.body.creatorId = user._id;
+                    }
+                    
+                    if(req.body.gymRoomId){
+                        const gymRoom = await GymRoom.findById(req.body.gymRoomId, { approved: 1, ownerId: 1});
+                         
+                         if (!gymRoom) {
+                            return res.status(404).json({ message: "Salle de sport non trouvée." });
+                        }
+                        if( !gymRoom.approved) {
+                            return res.status(403).json({ message: "Cette salle de sport n'est pas approuvée." });
+                        }
+                        if(gymRoom && gymRoom.ownerId?._id.toString() !== user._id.toString()){
+                           return res.status(403).json({ message: "Vous n'êtes pas autorisé à assigner cette salle de sport." });
+                        }
+                    }
+                     if(req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) {
+                const badges = await Badge.find({ _id: { $in: req.body.badgeRewardIds } });
+                if (!badges || badges.length !== req.body.badgeRewardIds.length) {
+                    return res.status(404).json({ message: "Un ou plusieurs badges n'existent pas." });
+                }
+            }
+                    const challenge = new Challenge(req.body);
+                    await challenge.save();
+                   return res.status(201).json(challenge);
                 } 
                 else {
                     return res.status(404).json({ message: "Accès refusé : vous n'avez pas le droit pour le moment de créer des challenges." });
@@ -147,7 +208,39 @@ return res.status(201).json(challenge);
                 await this.checkAndAwardBadges(updated.creatorId.toString());
                 }
                 return res.json(updated);
+
             } else if (user.role === UserRole.ADMIN) {
+                console.log("Admin update challenge");
+                if(req.body.creatorId && req.body.creatorId !== user._id.toString()){
+                    const creator = await User.findById(req.body.creatorId);
+                    if (!creator) {
+                        return res.status(404).json({ message: "Créateur du challenge non trouvé." });
+                    }
+                }
+                if(req.body.gymRoomId){
+                    const gymRoom = await GymRoom.findById(req.body.gymRoomId, { approved: true });
+                    if (!gymRoom) {
+                        return res.status(404).json({ message: "Salle de sport non trouvée." });
+                    }
+                }
+                if(req.body.badgeRewardIds && req.body.badgeRewardIds.length > 0) {
+                    const badgeExists = await Badge.exists({ _id: { $in: req.body.badgeRewardIds } });
+                    if (!badgeExists) {
+                        return res.status(404).json({ message: "Un ou plusieurs badges n'existent pas." });
+                    }
+                }
+                if(req.body.participantIds && req.body.participantIds.length > 0) {
+                    const exists = await User.exists({ _id: { $in: req.body.participantIds } });
+                    if (!exists) {
+                        return res.status(404).json({ message: "Un ou plusieurs participants n'existent pas." });
+                    }
+                }
+                if(req.body.completedBy && req.body.completedBy.length > 0) {
+                    const exists = await User.exists({ _id: { $in: req.body.completedBy } });
+                    if (!exists) {
+                        return res.status(404).json({ message: "Un ou plusieurs utilisateurs n'existent pas." });
+                    }       
+                }
                 const updated = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
                 if (updated && updated.status === 'completed' && updated.creatorId) {
                       //  await this.checkAndAwardRewards(updated.creatorId.toString()); // 
@@ -174,8 +267,11 @@ return res.status(201).json(challenge);
             if (user.role !== UserRole.ADMIN && challenge.creatorId.toString() !== user._id.toString()) {
                 return res.status(403).json({ message: "Accès refusé : vous n'êtes pas autorisé à supprimer ce challenge." });
             }   
-            await Challenge.findByIdAndDelete(req.params.id);
-            return res.status(204).end();
+           const deleted= await Challenge.findByIdAndDelete(req.params.id);
+           if(!deleted){
+                return res.status(404).json({ message: "Challenge non trouvé" });
+            }
+            return res.status(204).json({message: "Challenge supprimé avec succès." });
         }catch (err) {
             return res.status(500).json({ message: "Erreur lors de la suppression du challenge." });
         }
@@ -188,6 +284,9 @@ return res.status(201).json(challenge);
             const challenges = await Challenge.find({
                 duration: { $gte: min, $lte: max }
             });
+            if( challenges.length === 0) {
+                return res.status(404).json({ message: "Aucun challenge trouvé pour cette durée." });
+            }
             return res.json(challenges);
         } catch (err) {
             return res.status(500).json({ message: "Erreur lors du filtrage par durée." });
@@ -200,6 +299,9 @@ return res.status(201).json(challenge);
             const challenges = await Challenge.find({
                 exerciseTypeIds: exerciseTypeId
             });
+            if( challenges.length === 0) {
+                return res.status(404).json({ message: "Aucun challenge trouvé pour ce type d'exercice." });
+            }
             return res.json(challenges);
         } catch (err) {
             return res.status(500).json({ message: "Erreur lors du filtrage par type d'exercice." });
