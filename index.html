@@ -565,6 +565,7 @@ document.getElementById('create-reward-btn').addEventListener('click', async () 
     });
 
     await showApiAlert(res, 'Récompense créée', 'Erreur lors de la création de la récompense');
+    await populateRewardSelects();
     document.getElementById('get-rewards-btn').click(); 
 });
 
